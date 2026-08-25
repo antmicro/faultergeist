@@ -36,12 +36,8 @@ struct CharSet {
     bool contains(char c) { return strchr(set, c); }
 };
 
-struct BracketIndices {
-    std::size_t bopen_pos;
-    std::size_t bclose_pos;
-};
-
 // Combines two path parts with a dot. Returns only `first` or `second` if the other one is empty.
+[[maybe_unused]]
 static std::string combineSignalPath(std::string_view first, std::string_view second) {
     if (first.empty()) {
         return std::string{second};

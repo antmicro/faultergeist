@@ -13,7 +13,9 @@ define_worker_testbench_vars()
 fi_add_yosys_json(fi_e2e_worker_multiple_netlist
 )
 
-fi_configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.json.in")
+fi_configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
+  DEPENDS "${JSON_NETLIST}"
+)
 fi_add_fault_campaign(fi_e2e_worker_multiple_campaigns
   OUTPUT "${CAMPAIGN_STAMP}"
 )

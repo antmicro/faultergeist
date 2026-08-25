@@ -25,7 +25,7 @@ cat <<EOF
 # Before the tool can be ran, the project must be configured and built.
 # ==============================================================================
 EOF
-cmake -B build -S .. -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake -B build -S .. -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_TESTING=OFF
 cmake --build build -j "$(nproc)"
 
 

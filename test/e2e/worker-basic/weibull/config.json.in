@@ -35,7 +35,7 @@
     "sig_path_prefix": "top",
     "top_module": "@DESIGN_TOP@",
     "top_instance": "worker.dff_worker0",
-    "netlist_path": "@JSON_NETLIST@",
+    "netlist_path": "@NETLIST_PATH@",
     "fault_campaign_out": "@FAULT_CAMPAIGN_OUT@",
     "thread_number": @FI_E2E_JOBS@,
     "liberty_paths": [ @LIB_FILES@ ]

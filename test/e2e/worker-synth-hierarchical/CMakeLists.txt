@@ -13,7 +13,9 @@ fi_add_yosys_json(fi_e2e_worker_synth_hierarchical_netlist
   DESIGN_FILE_LIST "${WORKER_ROOT}/worker.flist"
 )
 
-fi_configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.json.in")
+fi_configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
+  DEPENDS "${JSON_NETLIST}"
+)
 fi_add_fault_campaign(fi_e2e_worker_synth_hierarchical_campaign
   DEPENDS fi_e2e_worker_synth_hierarchical_netlist
 )

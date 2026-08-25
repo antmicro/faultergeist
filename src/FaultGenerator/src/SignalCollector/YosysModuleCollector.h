@@ -16,12 +16,21 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include <nlohmann/json.hpp>
 
-class PlacementInfo;
+struct Cell;
+struct Module;
+class Liberty;
 
-class OpenROADParser final {
+class YosysModuleCollector {
+    const Liberty& liberty;
+
    public:
-    static PlacementInfo parse(const std::string&);
+    YosysModuleCollector(const Liberty& liberty) : liberty(liberty) {}
+
+    std::vector<Module> collectFromFile(const std::filesystem::path&) const;
+    std::vector<Module> collect(const nlohmann::json&) const;
+
+   private:
+    void collectCell(Module&, Cell, const nlohmann::json&) const;
 };

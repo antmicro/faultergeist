@@ -16,24 +16,14 @@
 
 #pragma once
 
-#include <ostream>
+#include <functional>
 
-#include <nlohmann/json.hpp>
+class Liberty;
+struct Cell;
 
-struct Cell {
-    std::string name;
-    std::string type;
+class IsFlipFlop {
+   public:
+    using PredType = std::function<bool(const Cell&, const Liberty&)>;
 
-    Cell() = default;
-    Cell(const std::string& name, const nlohmann::json& cell_json)
-        : name(name), type(cell_json.value("type", "")) {}
-
-    /* Returns signal path, in current (yosys dependent) implementation,
-     * by taking prefix before first '$'.
-     */
-    inline std::string getPath() const { return name.substr(0, name.find('$')); }
-
-    friend std::ostream& operator<<(std::ostream& os, const Cell& cell) {
-        return os << "{ .name=" << cell.name << ", .type=" << cell.type << " }";
-    }
+    static bool check(const Cell&, const Liberty&);
 };

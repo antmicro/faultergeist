@@ -64,4 +64,5 @@ class Liberty {
     Liberty(const std::vector<LibertyInfo>&);
     bool isFF(std::string_view) const;
     std::optional<double> getArea(std::string_view) const;
+    bool contains(const std::string& cell_type) const;
 };

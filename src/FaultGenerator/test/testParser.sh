@@ -14,7 +14,7 @@ then
   exit 1
 fi
 
-LIB_FILES="$(find $SEARCH_ROOT -name '*.lib*' -type f | grep -Ei "asap7|sky130|nangate45")"
+LIB_FILES="$(find "$SEARCH_ROOT" -name '*.lib*' -type f | grep -Ei "asap7|sky130|nangate45")"
 
 total=0
 failed=0
@@ -22,21 +22,30 @@ failed=0
 for file in $LIB_FILES
 do
   total="$((total+1))"
-  if file $file | grep "ASCII" &> /dev/null
+  if file "$file" | grep -q "ASCII"
   then
-    "$PARSER_BIN" --input_path "$file" > /dev/null
-    if [[ ! $? -eq 0 ]]
+    if ! "$PARSER_BIN" --input_path "$file" > /dev/null
     then
       echo "Parsing \"$file\" Failed"
       failed="$((failed+1))"
       EXIT_CODE=1
     fi
-  elif file $file | grep "gzip" &> /dev/null
+  elif file "$file" | grep -q "gzip"
   then
     uncompressed_file="$(mktemp)"
     gzip -dc "$file" > "$uncompressed_file"
-    "$PARSER_BIN" --input_path "$uncompressed_file" > /dev/null
-    if [[ ! $? -eq 0 ]]
+    if ! "$PARSER_BIN" --input_path "$uncompressed_file" > /dev/null
+    then
+      failed="$((failed+1))"
+      echo "Parsing \"$file\" Failed"
+      EXIT_CODE=1
+    fi
+    rm -f "$uncompressed_file"
+  elif file "$file" | grep -qi "7-zip"
+  then
+    uncompressed_file="$(mktemp)"
+    7z e -so "$file" > "$uncompressed_file"
+    if ! "$PARSER_BIN" --input_path "$uncompressed_file" > /dev/null
     then
       failed="$((failed+1))"
       echo "Parsing \"$file\" Failed"

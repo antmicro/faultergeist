@@ -7,12 +7,14 @@ add_library(FaultGenerationToolLib
   FaultStrategyRandom.cpp
   FaultStrategyWeibull.cpp
   GlobalOpts.cpp
-  IsFlipFlopPredicate.cpp
   Liberty.cpp
   LibertyParser.cpp
   OpenROADParser.cpp
   PlacementInfo.cpp
-  SignalCollector.cpp
+  SignalCollector/IsFlipFlopPredicate.cpp
+  SignalCollector/SignalCollector.cpp
+  SignalCollector/SlangModuleCollector.cpp
+  SignalCollector/YosysModuleCollector.cpp
   FaultEventsSignalFormatter.cpp
 )
 
@@ -27,6 +29,7 @@ target_link_libraries(FaultGenerationToolLib
     nlohmann_json::nlohmann_json
   PRIVATE
     absl::flags
+    slang::slang
     absl::flags_parse
     absl::strings
 )

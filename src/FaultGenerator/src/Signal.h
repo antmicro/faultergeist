@@ -17,6 +17,7 @@
 #pragma once
 
 #include "PlacementInfo.h"
+#include "SignalCollector/Cell.h"
 #include "Utils.h"
 
 #include <cstdint>
@@ -45,20 +46,15 @@ inline std::ostream& operator<<(std::ostream& os, const SignalType& type) {
 struct Signal {
     using Iterator = std::span<const Signal>::iterator;
 
+    const Cell cell;
     std::string path_prefix;
-    std::string signal_name;
-    std::string cell_type;
-    std::uint32_t width;
     double area;
     std::optional<Placement> cell_placement;
-    std::string hdlname;
     SignalType type = SignalType::UNKNOWN;
 
     friend std::ostream& operator<<(std::ostream& os, const Signal& signal) {
         os << "{ .path_prefix=" << signal.path_prefix;
-        os << ", .signal_name=" << signal.signal_name;
-        os << ", .cell_type=" << signal.cell_type;
-        os << ", .width=" << signal.width;
+        os << ", .cell=" << signal.cell;
         os << ", .area=" << signal.area;
         os << ", .placement=";
         if (signal.cell_placement) {
@@ -66,7 +62,6 @@ struct Signal {
         } else {
             os << "nullopt";
         }
-        os << ", .hdlname=" << signal.hdlname;
         os << ", .type=" << signal.type;
         return os << " }";
     }

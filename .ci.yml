@@ -102,9 +102,12 @@ prepare-liberty:
 check-formatting:
   <<: *build-setup
   stage: test
+  variables:
+    SCALENODE_RAM: 8000 # the only way to force generation of slang headers is to build slang_slang, which fails on 4000 RAM
   before_script:
     - apt-get update && apt-get install -y clang-format-19 clang-tidy-19 cmake build-essential
     - cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --build build --target slang_slang -j $(nproc)
   script:
     - echo "Checking formatting..."
     - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format-19 --dry-run --Werror
@@ -140,16 +143,15 @@ run-self-tests:
     - prepare-yosys
     - prepare-liberty
   script:
+    - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys:$PATH
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
-    - cmake --build build -j $(nproc)
-    - ctest --test-dir build --output-on-failure --tests-regex unit
-    - ctest --test-dir build --output-on-failure --tests-regex integration
+    - cmake --build build -j $(nproc) 2>&1 | tee build/Testing/Temporary/cmake-build.log
+    - ctest --test-dir build --output-on-failure --tests-regex 'unit|integration'
   artifacts:
     when: always
     paths:
-      - obj_dir
-      - build/Testing/Temporary/LastTest.log
+      - build/
     expire_in: 8 hours
 
 .run-end-to-end-tests:
@@ -163,10 +165,11 @@ run-self-tests:
     - prepare-yosys
     - prepare-liberty
   script:
+    - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys:$PATH
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
-    - cmake --build build -j $(nproc)
-    - ctest --test-dir build --output-on-failure --tests-regex e2e.${CI_PARALLEL_NAME} | tee build/ctest.log
+    - cmake --build build -j $(nproc) 2>&1 | tee build/cmake-build.log
+    - ctest --test-dir build --output-on-failure --tests-regex e2e.${CI_PARALLEL_NAME}
   artifacts:
     when: always
     paths:
@@ -187,11 +190,13 @@ run-parser-tests:
     VERILATOR_ROOT: /ci/verilator
   dependencies:
     - prepare-verilator
+    - prepare-liberty
   before_script:
     - git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD.git /ci/OpenROAD
   script:
     - ./build.sh
     - src/FaultGenerator/test/testParser.sh /ci/OpenROAD/test build/src/FaultGenerator/test/LibertyParserBin
+    - src/FaultGenerator/test/testParser.sh /ci/third_party/asap7 build/src/FaultGenerator/test/LibertyParserBin
 
 run-veer-sanity-check:
   <<: *veer-setup
@@ -219,9 +224,10 @@ run-veer-synth:
     - prepare-yosys
     - prepare-liberty
   script:
+    - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys:$PATH
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
-    - cmake --build build -j $(nproc) --target=fi_e2e_veer_basic_netlist | tee build/cmake.log
+    - cmake --build build -j $(nproc) --target=fi_e2e_veer_basic_netlist 2>&1 | tee build/cmake-build.log
   artifacts:
     when: always
     paths:

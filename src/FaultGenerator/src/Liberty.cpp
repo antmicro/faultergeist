@@ -57,3 +57,9 @@ std::optional<double> Liberty::getArea(std::string_view type) const {
         return std::nullopt;
     }
 }
+
+bool Liberty::contains(const std::string& type) const {
+    return std::any_of(infos.begin(), infos.end(), [&](const LibertyInfo& info) {
+        return info.cells.contains(std::string(type));
+    });
+}

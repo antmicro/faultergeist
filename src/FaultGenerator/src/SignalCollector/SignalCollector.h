@@ -21,8 +21,9 @@
 
 #include <string_view>
 
-class Cell;
-class Signal;
+struct Cell;
+struct Signal;
+struct Module;
 class Liberty;
 class PlacementInfo;
 
@@ -51,24 +52,13 @@ class SignalCollector {
             << "Empty top instance! Use --top_instance to specify it's name.";
     }
 
-    std::vector<Signal> collectFromFile(const std::string& netlist_filepath) const;
-    std::vector<Signal> collectFromJSON(const nlohmann::json& json) const;
+    std::vector<Signal> collectFromFile(const std::filesystem::path& netlist) const;
+    std::vector<Signal> collectFromModules(std::vector<Module>&) const;
 
    private:
-    struct Module {
-        std::string name;
+    static std::string dumpAllModules(const std::vector<Module>&);
 
-        // Name of the module instance and index to the module inside modules array.
-        std::vector<std::pair<std::string, unsigned int>> child_modules;
-
-        std::vector<Signal> signals;
-    };
-
-    void collectCell(Module&, const Cell&, const nlohmann::json&) const;
-    std::vector<Module> collectModules(const nlohmann::json& json) const;
-    static std::string dumpAllModules(const std::vector<Module>& modules);
-
-    int findTopModule(std::vector<Module>& modules) const;
+    int findTopModule(const std::vector<Module>&) const;
     void recursivelyCollectSignals(
         std::vector<Signal>& collected_signals,
         std::string_view current_path,

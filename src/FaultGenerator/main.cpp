@@ -19,12 +19,11 @@
 #include "FaultEventsSignalFormatter.h"
 #include "FaultStrategy.h"
 #include "GlobalOpts.h"
-#include "IsFlipFlopPredicate.h"
 #include "Liberty.h"
 #include "LogUtils.h"
 #include "PlacementInfo.h"
 #include "Signal.h"
-#include "SignalCollector.h"
+#include "SignalCollector/SignalCollector.h"
 #include "Utils.h"
 
 #include <filesystem>
@@ -38,7 +37,7 @@ struct TaskInput {
     std::shared_ptr<FaultStrategy> strategy;
     std::span<const Signal> signals;
     const FaultCampaignWriter& writer;
-    std::string output_file;
+    std::filesystem::path output_file;
 };
 
 std::vector<TaskInput> generate_tasks(

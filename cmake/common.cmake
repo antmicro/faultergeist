@@ -139,8 +139,8 @@ macro(_fi_resolve_implicit_arg_with_default ARG_NAME DEFAULT_FILENAME FALLBACK_D
 endmacro()
 
 macro(_fi_resolve_pdk_path_and_append_dependency DEPENDS_VAR)
-  foreach(lib_file IN LISTS ${FI_E2E_LIB_FILES})
-    message(WARNING "Adding ${lib_file} to command dependencies")
+  foreach(lib_file IN LISTS FI_E2E_LIB_FILES)
+    message(VERBOSE "Adding ${lib_file} to command dependencies")
     list(APPEND ${DEPENDS_VAR} "${lib_file}")
   endforeach()
   list(APPEND ${DEPENDS_VAR} ${FI_E2E_PDK_TARGET})
@@ -244,7 +244,7 @@ function(fi_require_e2e_tools)
     endif()
   else()
     set(_asap7_archives_found TRUE)
-    foreach(lib_archive IN LISTS ${FI_E2E_ASAP7_LIBERTY_ARCHIVES})
+    foreach(lib_archive IN LISTS FI_E2E_ASAP7_LIBERTY_ARCHIVES)
       if(NOT EXISTS "${lib_archive}")
         message(WARNING "ASAP7 Liberty archive ${lib_archive} not found. Clone third_party/asap7 or set ASAP7_LIBERTY_CACHE_PATH.")
         set(_asap7_archives_found FALSE)
@@ -277,6 +277,7 @@ function(fi_require_e2e_tools)
         add_custom_target(${FI_E2E_TOOLS_TARGET})
     endif()
   endif()
+  set(FI_E2E_TOOLS_FOUND "${FI_E2E_TOOLS_FOUND}" PARENT_SCOPE)
 endfunction()
 
 function(fi_add_ctest_scenario NAME TARGET_NAME)
@@ -387,7 +388,8 @@ function(fi_add_yosys_json NAME)
   add_dependencies("${NAME}" "${FI_E2E_TOOLS_TARGET}")
 endfunction()
 
-# fi_configure_file(<input> [OUTPUT <path>] [SIMULATION_DIR <dir>])
+# fi_configure_file(<input> [OUTPUT <path>] [SIMULATION_DIR <dir>]
+#                   [DEPENDS <files>...])
 #
 # Configures <input> at build time with @ONLY substitution on forwarded variables.
 #
@@ -405,7 +407,7 @@ endfunction()
 function(fi_configure_file INPUT)
   set(options)
   set(one_value_args OUTPUT SIMULATION_DIR)
-  set(multi_value_args EXT_LIB_FILES)
+  set(multi_value_args EXT_LIB_FILES DEPENDS)
   cmake_parse_arguments(FI "" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
   _fi_resolve_implicit_arg_with_default(SIMULATION_DIR "${FI_E2E_VERILATOR_OUTPUT_DIR_DEFAULT_FILENAME}" WORK_DIR)
@@ -416,7 +418,7 @@ function(fi_configure_file INPUT)
 
   set(_fi_configure_defs)
   # Variables forwarded to configure_file_at_build.cmake for @ONLY substitution.
-  foreach(_fi_var DESIGN_TOP JSON_NETLIST NETLIST_PATH FAULT_CAMPAIGN_OUT CAMPAIGN_DIR FI_E2E_JOBS)
+  foreach(_fi_var DESIGN_TOP JSON_NETLIST VERILOG_NETLIST NETLIST_PATH FAULT_CAMPAIGN_OUT CAMPAIGN_DIR FI_E2E_JOBS)
     set(_fi_arg_var "FI_${_fi_var}")
     if(DEFINED ${_fi_arg_var} AND NOT "${${_fi_arg_var}}" STREQUAL "")
       list(APPEND _fi_configure_defs "-D${_fi_var}=${${_fi_arg_var}}")
@@ -430,7 +432,7 @@ function(fi_configure_file INPUT)
     endif()
   endforeach()
 
-  set(_depends "${INPUT}" "${FI_E2E_SCRIPT_DIR}/configure_file_at_build.cmake" "${FI_JSON_NETLIST}")
+  set(_depends "${INPUT}" "${FI_E2E_SCRIPT_DIR}/configure_file_at_build.cmake" ${FI_DEPENDS})
 
   get_filename_component(_output_dir "${FI_OUTPUT}" DIRECTORY)
 

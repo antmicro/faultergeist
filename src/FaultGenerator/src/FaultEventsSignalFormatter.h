@@ -21,8 +21,8 @@
 #include <string_view>
 #include <vector>
 
-class Signal;
-class FaultEvent;
+struct Signal;
+struct FaultEvent;
 
 class FaultEventsSignalFormatter {
     struct SignalData {

@@ -30,12 +30,12 @@ function(run)
     message(FATAL_ERROR "Command failed: ${command}")
   endif()
 endfunction()
-function(require_force action)
+macro(require_force action)
   if(NOT FI_E2E_FORCE_SETUP_VEER)
     message(FATAL_ERROR
-      "${action} is required. Reconfigure with -DFI_E2E_FORCE_SETUP_VEER=ON")
+      "${action} is required. Reconfigure with -DFI_E2E_FORCE_SETUP_VEER=ON or apply preparation manually")
   endif()
-endfunction()
+endmacro()
 #==============================================================================
 
 # Initialize missing or mismatched nested submodules.

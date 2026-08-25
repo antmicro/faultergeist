@@ -16,12 +16,24 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include <ostream>
 
-class PlacementInfo;
+struct Cell {
+    std::string name;
+    std::string type;
+    std::string hdlname;
+    std::uint32_t width;
 
-class OpenROADParser final {
-   public:
-    static PlacementInfo parse(const std::string&);
+    /* Returns signal path, in current (yosys dependent) implementation,
+     * by taking prefix before first '$'.
+     */
+    inline std::string getPath() const { return name.substr(0, name.find('$')); }
+
+    friend std::ostream& operator<<(std::ostream& os, const Cell& cell) {
+        os << "{ .name=" << cell.name;
+        os << ", .type=" << cell.type;
+        os << ", .hdlname=" << cell.hdlname;
+        os << ", .width=" << cell.width;
+        return os << " }";
+    }
 };

@@ -65,7 +65,7 @@ fi_add_verilated_sim(fi_integration_missing_campaign_file_sim
   SOURCES ${WORKER_SOURCES}
 )
 fi_add_sim_run(fi_integration_missing_campaign_file_run
-  EXPECT_MISMATCH # TODO: Once EXPECT_REGEX is available this should be `EXPECT_REGEX Failed to open file 'non_existent.csv': No such file or directory`
+  EXPECT_REGEX "Failed to open file 'non_existent.csv': No such file or directory"
   DEPENDS fi_integration_missing_campaign_file_sim
   WORK_DIR "${SIMULATION_DIR}"
 )

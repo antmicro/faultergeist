@@ -16,14 +16,24 @@
 
 #pragma once
 
-#include <functional>
+#include <filesystem>
+#include <memory>
+#include <vector>
 
+struct Cell;
+struct Module;
 class Liberty;
-class Cell;
 
-class IsFlipFlop {
+namespace slang::syntax {
+class SyntaxTree;
+}  // namespace slang::syntax
+
+class SlangModuleCollector {
+    const Liberty& liberty;
+
    public:
-    using PredType = std::function<bool(const Cell&, const Liberty&)>;
+    SlangModuleCollector(const Liberty& liberty) : liberty(liberty) {}
 
-    static bool check(const Cell&, const Liberty&);
+    std::vector<Module> collectFromFile(const std::filesystem::path&) const;
+    std::vector<Module> collect(const std::shared_ptr<slang::syntax::SyntaxTree>& tree) const;
 };

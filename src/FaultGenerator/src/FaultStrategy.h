@@ -21,8 +21,8 @@
 #include <span>
 #include <vector>
 
-class Signal;
-class FaultEvent;
+struct Signal;
+struct FaultEvent;
 
 class FaultStrategy {
    public:

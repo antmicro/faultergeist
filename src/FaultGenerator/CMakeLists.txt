@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
-project(faultergeist-gen)
-
 add_subdirectory(src)
 
 # Build exec

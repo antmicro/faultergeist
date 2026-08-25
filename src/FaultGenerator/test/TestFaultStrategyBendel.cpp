@@ -35,16 +35,13 @@ std::vector<Signal> createSignals(std::size_t count) {
     signals.reserve(count);
     for (std::size_t i = 0; i < count; ++i) {
         std::string signal_name = "signal_" + std::to_string(i);
-        signals.push_back(
-            {/*prefix_path=*/"",
-             signal_name,
-             std::to_string(i),
-             1024,
-             DEFAULT_CELL_AREA,
-             std::nullopt,
-             signal_name,
-             SignalType::REGISTER}
-        );
+        signals.push_back(Signal{
+            Cell{.name = signal_name, .width = 1024},
+            /*prefix_path=*/"",
+            DEFAULT_CELL_AREA,
+            std::nullopt,
+            SignalType::REGISTER
+        });
     }
     return signals;
 }

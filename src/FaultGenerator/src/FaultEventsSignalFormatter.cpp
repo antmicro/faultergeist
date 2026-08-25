@@ -29,6 +29,11 @@
 
 namespace {
 
+struct BracketIndices {
+    std::size_t bopen_pos;
+    std::size_t bclose_pos;
+};
+
 // Tries to find indices of unescaped brackets only at the end of the string.
 // Returns a `BracketIndices` struct instance, if unescaped brackets are present, containing
 // opening bracket char index in `bopen_pos` and closing bracket char index in `bclose_pos`.
@@ -98,21 +103,22 @@ FaultEventsSignalFormatter::FaultEventsSignalFormatter(
 }
 
 void FaultEventsSignalFormatter::insertUngrouped(std::size_t id, const Signal& signal) {
-    real_signals_cache[id] =
-        SignalData{.path = combineSignalPath(signal.path_prefix, signal.signal_name), .bit_idx = 0};
+    real_signals_cache[id] = SignalData{
+        .path = combineSignalPath(signal.path_prefix, signal.cell.getPath()), .bit_idx = 0
+    };
 }
 
 void FaultEventsSignalFormatter::insert(std::size_t id, const Signal& signal) {
-    std::string_view signal_path{signal.signal_name};
-    if (signal.width > 1) {
-        VLOG(2) << "[" << signal.signal_name << "] signal.width>1. Abandoning grouping.";
+    std::string signal_name{signal.cell.getPath()};
+    if (signal.cell.width > 1) {
+        VLOG(2) << "[" << signal_name << "] signal.width>1. Abandoning grouping.";
         insertUngrouped(id, signal);
         return;
     }
 
-    auto idxs = findNotEscapedBrackets(signal_path);
+    auto idxs = findNotEscapedBrackets(signal_name);
     if (!idxs) {
-        VLOG(2) << "[" << signal.signal_name << "] is not indexed. Abandoning grouping.";
+        VLOG(2) << "[" << signal_name << "] is not indexed. Abandoning grouping.";
         insertUngrouped(id, signal);
         return;
     }
@@ -120,22 +126,22 @@ void FaultEventsSignalFormatter::insert(std::size_t id, const Signal& signal) {
 
     // When presence of indexing was detected, this call strips the indexing:
     // "top.worker.resp[6]" -> "top.worker.resp"
+    std::string_view signal_path{signal_name};
     std::string_view real_signal_name = signal_path.substr(0, bopen_pos);
     std::string_view idx_str = signal_path.substr(bopen_pos + 1, bclose_pos - bopen_pos - 1);
     std::size_t idx;
     const auto [ptr, ec] = std::from_chars(idx_str.data(), idx_str.data() + idx_str.size(), idx);
     if (ec != std::errc{} || ptr != idx_str.data() + idx_str.size()) {
-        VLOG(2) << "[" << signal.signal_name
-                << "] is not indexed with a number. Abandoning grouping.";
+        VLOG(2) << "[" << signal_name << "] is not indexed with a number. Abandoning grouping.";
         insertUngrouped(id, signal);
         return;
     }
 
-    VLOG(2) << "[" << signal.signal_name << "] grouped correctly as {" << real_signal_name << ", "
-            << idx << "}";
+    VLOG(2) << "[" << signal_name << "] grouped correctly as {" << real_signal_name << ", " << idx
+            << "}";
     real_signals_cache[id] = SignalData{
         .path = combineSignalPath(signal.path_prefix, real_signal_name),
-        .hdlname = getSignalPathFromHdlname(prefix_path, signal.hdlname),
+        .hdlname = getSignalPathFromHdlname(prefix_path, signal.cell.hdlname),
         .bit_idx = idx
     };
 }

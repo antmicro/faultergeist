@@ -30,17 +30,19 @@ const double DEFAULT_AREA = 1.0;  // this is not important to this module
 Signal createSignal(
     std::string prefix_path,
     std::string signal_name,
-    std::size_t width,
+    std::uint32_t width,
     std::string hdlname = ""
 ) {
     return Signal(
+        {
+            .name = signal_name,
+            .type = "$dff",
+            .hdlname = std::move(hdlname),
+            .width = width,
+        },
         std::move(prefix_path),
-        std::move(signal_name),
-        "$dff",
-        width,
         DEFAULT_AREA,
         std::nullopt,
-        std::move(hdlname),
         SignalType::REGISTER
     );
 }
@@ -52,7 +54,13 @@ FaultEvent createFromSignal(
     std::uint32_t bit
 ) {
     const auto& signal = signals[id];
-    return FaultEvent{signals.begin() + id, time, "", bit, FaultEventType::SINGLE_EVENT_UPSET};
+    return FaultEvent{
+        signals.begin() + id,
+        time,
+        combineSignalPath(signal.path_prefix, signal.cell.getPath()),
+        bit,
+        FaultEventType::SINGLE_EVENT_UPSET
+    };
 }
 
 TEST(FaultEventsSignalFormatter, NormalTest) {
@@ -145,10 +153,10 @@ TEST(FaultEventsSignalFormatter, BracketFalsePositives) {
     );
     const std::vector<std::string> signal_paths = {
         combineSignalPath(
-            false_positives_signals[0].path_prefix, false_positives_signals[0].signal_name
+            false_positives_signals[0].path_prefix, false_positives_signals[0].cell.getPath()
         ),
         combineSignalPath(
-            false_positives_signals[1].path_prefix, false_positives_signals[1].signal_name
+            false_positives_signals[1].path_prefix, false_positives_signals[1].cell.getPath()
         ),
     };
     FaultCampaignWriter::FaultFormatter null_formatter([&false_positives_signals,

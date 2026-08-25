@@ -71,9 +71,9 @@ class FaultStrategyRunner {
         : evTimeGenerator(eventTimeGenerator),
           maxTimeCalc(maxTimeCalc),
           config(config),
+          gen(gen),
           streams(streams),
-          signals(signals),
-          gen(gen) {
+          signals(signals) {
         SEE_CHECK(streams.size() > 0) << "No streams read";
         max_times.reserve(streams.size());
         for (std::size_t i = 0; i < streams.size(); i++) {
@@ -188,7 +188,7 @@ class FaultStrategyRunner {
                 /*signal_path=*/"",
                 int_dist(
                     worker_gen.random_generator,
-                    std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.width}
+                    std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
                 ),
                 faultEventType(signal.type)
             );
