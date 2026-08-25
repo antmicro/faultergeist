@@ -167,7 +167,8 @@ run-self-tests:
   script:
     - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys:$PATH
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
+    - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${SYNTH_CACHE_URL}" --depth 1 -b synth-cache synth_cache
+    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DVEER_JSON_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.json -DVEER_VERILOG_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.v
     - cmake --build build -j $(nproc) 2>&1 | tee build/cmake-build.log
     - ctest --test-dir build --output-on-failure --tests-regex e2e.${CI_PARALLEL_NAME}
   artifacts:
