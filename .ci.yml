@@ -68,18 +68,17 @@ prepare-yosys:
   script:
     - cd third_party/yosys
     - git submodule update --init --recursive .
-    - make config-gcc
-    - make -j `nproc` CXX="ccache g++"
-    - make install
+    - cmake -B build . -DCMAKE_BUILD_TYPE=Release
+    - cmake --build build --config Release --parallel $(nproc)
+    - cmake --install build --strip
     - cd ../
-    - export PATH=$(pwd)/yosys:$PATH
-    - export YOSYS_PREFIX=$(pwd)/yosys/
-    - ls -l $YOSYS_PREFIX
+    - export PATH=$(pwd)/yosys/build:$PATH
     - cd yosys-slang
     - git submodule update --init --recursive .
     - make -j $(nproc) CXX="ccache g++" install
-    - mkdir ../yosys/share/plugins
-    - cp build/slang.so ../yosys/share/plugins
+    - mkdir -p ../yosys/build/share/plugins
+    - cp build/slang.so ../yosys/build/share/plugins
+
   artifacts:
     when: always
     paths:
@@ -124,7 +123,7 @@ run-example:
     - prepare-verilator
     - prepare-yosys
   script:
-    - export PATH=$(pwd)/third_party/yosys:$PATH
+    - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - cd example
     - bash run.sh
   artifacts:
@@ -144,7 +143,7 @@ run-self-tests:
     - prepare-liberty
   script:
     - set -o pipefail
-    - export PATH=$(pwd)/third_party/yosys:$PATH
+    - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
     - cmake --build build -j $(nproc) 2>&1 | tee build/Testing/Temporary/cmake-build.log
     - ctest --test-dir build --output-on-failure --tests-regex 'unit|integration'
@@ -166,7 +165,7 @@ run-self-tests:
     - prepare-liberty
   script:
     - set -o pipefail
-    - export PATH=$(pwd)/third_party/yosys:$PATH
+    - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${SYNTH_CACHE_URL}" --depth 1 -b synth-cache synth_cache
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DVEER_JSON_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.json -DVEER_VERILOG_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.v
     - cmake --build build -j $(nproc) 2>&1 | tee build/cmake-build.log
@@ -226,7 +225,7 @@ run-veer-synth:
     - prepare-liberty
   script:
     - set -o pipefail
-    - export PATH=$(pwd)/third_party/yosys:$PATH
+    - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
     - cmake --build build -j $(nproc) --target=fi_e2e_veer_basic_netlist 2>&1 | tee build/cmake-build.log
   artifacts:
