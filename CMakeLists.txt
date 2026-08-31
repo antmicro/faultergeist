@@ -15,6 +15,7 @@ if(BUILD_TESTING)
   fi_require_e2e_tools()
   add_subdirectory(test/worker)
   add_subdirectory(test/veer)
+  add_subdirectory(test/wide)
 endif()
 
 add_subdirectory(src/FaultGenerator)

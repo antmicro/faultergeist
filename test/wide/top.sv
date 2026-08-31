@@ -14,20 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#pragma once
+module top;
+  reg [255:0] wide_reg = 0;
+`ifdef FAULT_INJECTION_ENABLE
+  Faultergeist fi (`FAULT_INJECTION_CAMPAIGN_FILE);
+`endif
+  initial begin
+    if ($test$plusargs("trace") != 0) begin
+      $display("[%0t] Tracing to %s...\n", $time, `VCD_OUTPUT_PATH);
+      $dumpfile(`VCD_OUTPUT_PATH);
+      $dumpvars();
+      $display("[%0t] Model running...\n", $time);
+    end
 
-#include "ManagedVpiHandle.h"
-
-#include <string>
-
-namespace fin {
-
-struct Signal {
-    std::string path;
-    ManagedVpiHandle vpi_handle;
-    int vpi_size;
-
-    vpiHandle handle() const { return vpi_handle.handle(); }
-};
-
-}  // namespace fin
+    #2 $finish;
+  end
+endmodule

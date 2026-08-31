@@ -24,9 +24,9 @@ namespace {
 class EventParserTester : public fin::EventParser {
    public:
     EventParserTester() {
-        insertSignal({"TOP.test_signal", nullptr});
-        insertSignal({"TOP.another_sig", nullptr});
-        insertSignal({"TOP.sig", nullptr});
+        insertSignal({"TOP.test_signal", nullptr, 0});
+        insertSignal({"TOP.another_sig", nullptr, 0});
+        insertSignal({"TOP.sig", nullptr, 0});
     }
 
     std::optional<fin::Event> parse_line(std::string_view line) { return parse(line); }

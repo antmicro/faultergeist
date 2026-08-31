@@ -1,0 +1,11 @@
+macro(define_wide_testbench_vars)
+  set(WIDE_RTL_ROOT "${PROJECT_SOURCE_DIR}/test/wide")
+  set(WIDE_DESIGN_FILE_LIST "${WIDE_RTL_ROOT}/wide.flist")
+  set(WIDE_DESIGN_TOP "top")
+  set(WIDE_SOURCES ${WIDE_RTL_ROOT}/top.sv)
+
+  set(RTL_ROOT "${WIDE_RTL_ROOT}")
+  set(DESIGN_FILE_LIST "${WIDE_DESIGN_FILE_LIST}")
+  set(DESIGN_TOP "${WIDE_DESIGN_TOP}")
+  set(SOURCES "${WIDE_SOURCES}")
+endmacro()

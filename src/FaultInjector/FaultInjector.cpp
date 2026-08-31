@@ -21,6 +21,7 @@
 
 #include "vpi_user.h"
 
+#include <bitset>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -217,29 +218,40 @@ class FaultInjector {
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiReleaseFlag);
     }
 
+    std::string vpiVectorToString(s_vpi_value vpi_value, int vpi_size) {
+        std::stringstream ss;
+        constexpr int word_size =
+            std::numeric_limits<decltype(vpi_value.value.vector->aval)>::digits;
+        for (int i = std::max(vpi_size / word_size - 1, 0); i >= 0; --i) {
+            std::bitset<word_size> word(vpi_value.value.vector[i].aval);
+            ss << word.to_string();
+        }
+        return ss.str();
+    }
+
     void simulateSingleEventUpset(const s_vpi_time& time, const Event& event) {
         fin_printf(const_cast<char*>("- [@%d] Simulating single-event upset\n"), time.low);
 
         s_vpi_value vpi_value{};
-        vpi_value.format = vpiIntVal;
+        vpi_value.format = vpiVectorVal;
         vpi_get_value(event.handle(), &vpi_value);
 
         fin_printf(
-            const_cast<char*>("- [@%d] SEU: before flipping %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SEU: before flipping %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(vpi_value, event.signal->vpi_size).data()
         );
-        vpi_value.value.integer ^= 1 << event.bit_idx;
+        vpi_value.value.vector[event.bit_idx / 32].aval ^= 1 << (event.bit_idx % 32);
         fin_printf(
-            const_cast<char*>("- [@%d] SEU: after flipping %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SEU: after flipping %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(vpi_value, event.signal->vpi_size).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiNoDelay);
     }

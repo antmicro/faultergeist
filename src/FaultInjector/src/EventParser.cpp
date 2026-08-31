@@ -65,10 +65,9 @@ void EventParser::gatherSignals(vpiHandle it, int indent) {
                 fin_printf(const_cast<char*>("\t"));
             }
             int vpi_size = vpi_get(vpiSize, vh11);
-            int vpi_type = vpi_get(vpiType, vh11);
-            fin_printf("reg '%s, width: %d, type: %d'\n", fn, vpi_size, vpi_type);
+            fin_printf("reg '%s', width: %d\n", fn, vpi_size);
 
-            insertSignal(Signal{std::string{fn}, ManagedVpiHandle{vh11}});
+            insertSignal(Signal{std::string{fn}, ManagedVpiHandle{vh11}, vpi_size});
         }
         vpiHandle scopeIt = vpi_iterate(vpiInternalScope, hndl.handle());
         if (scopeIt) {
