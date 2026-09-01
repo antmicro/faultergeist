@@ -505,6 +505,7 @@ function(fi_add_fault_campaign NAME)
   endif()
 
   set(_command "$<TARGET_FILE:faultergeist-gen>" ${FI_ARGS})
+  set(_log_file "${FI_OUTPUT}_gen.log")
   if(FI_CONFIG)
     list(APPEND _command "--config_file" "${FI_CONFIG}")
   endif()
@@ -540,7 +541,7 @@ function(fi_add_fault_campaign NAME)
     ${_byproducts}
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${FI_OUTPUT}" "${FI_FAULT_CAMPAIGN_OUT}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory ${_make_dirs}
-    COMMAND ${_command}
+    COMMAND bash -c "\"$@\" > \"${_log_file}\" 2>&1" -- ${_command}
     ${_check_campaign}
     COMMAND "${CMAKE_COMMAND}" -E touch "${FI_OUTPUT}"
     DEPENDS ${_depends}
