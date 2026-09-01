@@ -2,38 +2,38 @@
   "model": {
     "name": "bendel",
     "params" : {
-      "device_area": 57.12,
-      "num_cells": 64,
       "streams": [
         {
             "name":       "run55",
-            "energy":     20.0e6,
-            "flux_phi":   1.12e12,
-            "fluence":    1e14
+            "energy":     20.0,
+            "flux_phi":   1.12e25,
+            "max_time":   "89289ms"
         },
         {
             "name":       "run52",
-            "energy":     40.0e6,
-            "flux_phi":   1.19e12,
-            "fluence":    1e14
+            "energy":     40.0,
+            "flux_phi":   1.19e25,
+            "max_time":   "84033ms"
         },
         {
             "name":       "run47",
-            "energy":     60.0e6,
-            "flux_phi":   9.17e11,
-            "fluence":    1e14
+            "energy":     60.0,
+            "flux_phi":   9.17e24,
+            "max_time":   "109051ms"
         }
       ]
     }
   },
   "params": {
     "seed": 42,
+    "simulation_time": "20ps",
     "num_of_events": 10000,
     "sig_path_prefix": "top",
     "top_module": "@DESIGN_TOP@",
     "top_instance": "worker.dff_worker0",
     "netlist_path": "@NETLIST_PATH@",
     "fault_campaign_out": "@FAULT_CAMPAIGN_OUT@",
+    "liberty_area_scale": "1um2",
     "thread_number": @FI_E2E_JOBS@,
     "liberty_paths": [ @LIB_FILES@ ]
   }

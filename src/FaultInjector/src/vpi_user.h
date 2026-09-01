@@ -922,10 +922,10 @@ XXTERN PLI_INT32 vpi_get_vlog_info PROTO_PARAMS((p_vpi_vlog_info vlog_info_p));
 
 /* routines added with 1364-2001 */
 
-XXTERN PLI_INT32 vpi_get_data PROTO_PARAMS((PLI_INT32 id, PLI_BYTE8* dataLoc, PLI_INT32 numOfBytes)
-);
-XXTERN PLI_INT32 vpi_put_data PROTO_PARAMS((PLI_INT32 id, PLI_BYTE8* dataLoc, PLI_INT32 numOfBytes)
-);
+XXTERN PLI_INT32 vpi_get_data
+    PROTO_PARAMS((PLI_INT32 id, PLI_BYTE8* dataLoc, PLI_INT32 numOfBytes));
+XXTERN PLI_INT32 vpi_put_data
+    PROTO_PARAMS((PLI_INT32 id, PLI_BYTE8* dataLoc, PLI_INT32 numOfBytes));
 XXTERN void* vpi_get_userdata PROTO_PARAMS((vpiHandle obj));
 XXTERN PLI_INT32 vpi_put_userdata PROTO_PARAMS((vpiHandle obj, void* userdata));
 XXTERN PLI_INT32 vpi_vprintf PROTO_PARAMS((PLI_BYTE8 * format, va_list ap));

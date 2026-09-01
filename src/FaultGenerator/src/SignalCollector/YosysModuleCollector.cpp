@@ -111,7 +111,8 @@ std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) co
     return modules;
 }
 
-std::vector<Module> YosysModuleCollector::collectFromFile(const std::filesystem::path& netlist
+std::vector<Module> YosysModuleCollector::collectFromFile(
+    const std::filesystem::path& netlist
 ) const {
     std::ifstream netlist_file(netlist.c_str());
     SEE_PCHECK(netlist_file) << "Cannot access netlist file '" << netlist << "'";

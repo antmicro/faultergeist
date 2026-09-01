@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "UnitUtils.h"
+
 #include <memory>
 #include <random>
 #include <span>
@@ -29,7 +31,7 @@ class FaultStrategy {
     struct Config final {
         std::uint64_t num_of_events;
         std::uint32_t seed;
-        std::uint64_t simulation_time;
+        unit::SIM_TIME simulation_time;
         std::uint32_t thread_number;
 
         bool tooManyEventsGenerated(std::size_t generated) const {
@@ -39,7 +41,7 @@ class FaultStrategy {
         friend std::ostream& operator<<(std::ostream& os, const Config& config) {
             os << "{ .num_of_events=" << config.num_of_events;
             os << ", .seed=" << config.seed;
-            os << ", .simulation_time=" << config.simulation_time;
+            os << std::format(", .simulation_time={}", config.simulation_time);
             os << ", .thread_number=" << config.thread_number;
             return os << " }";
         }
@@ -50,11 +52,10 @@ class FaultStrategy {
     };
 
     const Config config;
-    RandomGen gen;
 
     virtual std::vector<FaultEvent> generate(std::span<const Signal> signals) = 0;
     virtual std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) = 0;
 
    protected:
-    FaultStrategy(const Config& config) : config{config}, gen{config.seed} {}
+    FaultStrategy(const Config& config) : config{config} {}
 };

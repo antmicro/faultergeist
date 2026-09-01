@@ -19,6 +19,7 @@
 #include "FaultEventsSignalFormatter.h"
 #include "Signal.h"
 #include "TestUtils.h"
+#include "UnitUtils.h"
 
 #include <gtest/gtest.h>
 
@@ -26,7 +27,7 @@
 #include <string>
 #include <vector>
 
-const double DEFAULT_AREA = 1.0;  // this is not important to this module
+const unit::AREA DEFAULT_AREA = 1.0 * unit::AREA::unit;  // this is not important to this module
 Signal createSignal(
     std::string prefix_path,
     std::string signal_name,
@@ -56,7 +57,7 @@ FaultEvent createFromSignal(
     const auto& signal = signals[id];
     return FaultEvent{
         signals.begin() + id,
-        time,
+        time * unit::SIM_TIME::unit,
         combineSignalPath(signal.path_prefix, signal.cell.getPath()),
         bit,
         FaultEventType::SINGLE_EVENT_UPSET

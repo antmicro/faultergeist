@@ -49,7 +49,8 @@ std::vector<Signal> SignalCollector::collectFromFile(const std::filesystem::path
     return collectFromModules(collected_modules);
 }
 
-std::vector<Signal> SignalCollector::collectFromModules(std::vector<Module>& collected_modules
+std::vector<Signal> SignalCollector::collectFromModules(
+    std::vector<Module>& collected_modules
 ) const {
     int top_module_index = findTopModule(collected_modules);
 
@@ -91,7 +92,7 @@ void SignalCollector::recursivelyCollectSignals(
 ) const {
     VLOG(2) << "Collecting signals for '" << module.name << "' under prefix: " << current_path;
     for (const Cell& cell : module.cells) {
-        std::optional<double> area = liberty.getArea(cell.type);
+        std::optional<unit::AREA> area = liberty.getArea(cell.type);
         SEE_CHECK(area) << "Cell '" << cell.name << "' has no area in liberty";
 
         auto cell_placement = placement.getCellPlacement(cell.name);

@@ -19,21 +19,21 @@ class Cell:
         # self.weibull_L0 = 1.09   * 1e5  # [Mev * cm^2 / mg]
         # self.weibull_W  = 39.25  * 1e5  # [Mev * cm^2 / mg]
         # self.weibull_s  = 1.116
-        # self.weibull_g0 = 0.284  * 1e-4 # [s * cm^2 / bit]
+        # self.weibull_g0 = 0.284  * 1e-4 # [cm^2 / bit]
 
         # # HRX/SEE/0073
         # # https://escies.org/download/webDocumentFile?id=847
         # self.weibull_L0 = 0.7249   * 1e5  # [Mev * cm^2 / mg]
         # self.weibull_W  = 16.26   * 1e5  # [Mev * cm^2 / mg]
         # self.weibull_s  = 1.02
-        # self.weibull_g0 = 3.3e-8   * 1e-4 # [s * cm^2 / bit]
+        # self.weibull_g0 = 3.3e-8   * 1e-4 # [cm^2 / bit]
 
         # # "An empirical model for predicting proton induced upset"
         # # 62256R
         self.weibull_L0 = 1.60   * 1e5  # [Mev * cm^2 / mg]
         self.weibull_W  = 20.0   * 1e5  # [Mev * cm^2 / mg]
         self.weibull_s  = 1.65
-        self.weibull_g0 = 0.640  * 1e-4 # [s * cm^2 / bit]
+        self.weibull_g0 = 0.640  * 1e-4 # [cm^2 / bit]
 
 class Stream:
     def __init__(self, model, phi, let_or_energy, theta=0.0):

@@ -17,12 +17,13 @@
 #include "FaultCampaignWriter.h"
 #include "FaultEvent.h"
 #include "FaultEventsSignalFormatter.h"
-#include "FaultStrategy.h"
-#include "FaultStrategyBendel.h"
-#include "FaultStrategyRandom.h"
-#include "FaultStrategyWeibull.h"
+#include "FaultStrategy/Bendel.h"
+#include "FaultStrategy/FaultStrategy.h"
+#include "FaultStrategy/Random.h"
+#include "FaultStrategy/Weibull.h"
 
 #include "TestUtils.h"
+#include "UnitUtils.h"
 
 #include <gtest/gtest.h>
 
@@ -34,37 +35,119 @@
 const FaultStrategy::Config config{
     .num_of_events = 10,
     .seed = 2137,
-    .simulation_time = 1000,
+    .simulation_time = 1000 * unit::s,
     .thread_number = 4
 };
 
-TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
-    std::vector<Signal> signals = createSignals(10);
+const bool OVERRIDE_GOLDENFILES = false;
 
+TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
     WeibullConfig weibull_config = {
-        .streams =
-            {WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 9.15e3 * 1e4, .max_time = 1094},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 996},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.04e3 * 1e4, .max_time = 409},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.05e3 * 1e4, .max_time = 399},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 5.04e2 * 1e4, .max_time = 166},
-             WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 536},
-             WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 551},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.58e3 * 1e4, .max_time = 417},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.51e3 * 1e4, .max_time = 411},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.45e3 * 1e4, .max_time = 12},
-             WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.00e3 * 1e4, .max_time = 433},
-             WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.05e3 * 1e4, .max_time = 452},
-             WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.32e3 * 1e4, .max_time = 433},
-             WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.77e3 * 1e4, .max_time = 636},
-             WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.03e3 * 1e4, .max_time = 201},
-             WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.11e3 * 1e4, .max_time = 197},
-             WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 7.60e3 * 1e4, .max_time = 133},
-             WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 8.17e3 * 1e4, .max_time = 124},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 9.99e3 * 1e4, .max_time = 102},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 5.17e1 * 1e4, .max_time = 1275}}
+        .streams = {
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 9.15e3 * inverse(unit::s * unit::cm2),
+                .max_time = 1094 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 996 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.04e3 * inverse(unit::s * unit::cm2),
+                .max_time = 409 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.05e3 * inverse(unit::s * unit::cm2),
+                .max_time = 399 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.04e2 * inverse(unit::s * unit::cm2),
+                .max_time = 166 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 536 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 551 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.58e3 * inverse(unit::s * unit::cm2),
+                .max_time = 417 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.51e3 * inverse(unit::s * unit::cm2),
+                .max_time = 411 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.45e3 * inverse(unit::s * unit::cm2),
+                .max_time = 12 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.00e3 * inverse(unit::s * unit::cm2),
+                .max_time = 433 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.05e3 * inverse(unit::s * unit::cm2),
+                .max_time = 452 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.32e3 * inverse(unit::s * unit::cm2),
+                .max_time = 433 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.77e3 * inverse(unit::s * unit::cm2),
+                .max_time = 636 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.03e3 * inverse(unit::s * unit::cm2),
+                .max_time = 201 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.11e3 * inverse(unit::s * unit::cm2),
+                .max_time = 197 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 7.60e3 * inverse(unit::s * unit::cm2),
+                .max_time = 133 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 8.17e3 * inverse(unit::s * unit::cm2),
+                .max_time = 124 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 9.99e3 * inverse(unit::s * unit::cm2),
+                .max_time = 102 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.17e1 * inverse(unit::s * unit::cm2),
+                .max_time = 1275 * unit::s
+            }
+        }
     };
 
+    std::vector<Signal> signals = createSignals(64, weibull_config.reference_cell_area, 256 * 1024);
     WeibullStrategy strategy{config, weibull_config};
     std::vector<FaultEvent> stream_events = strategy.generate(signals);
 
@@ -73,34 +156,40 @@ TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/weibull_campaign.csv.out");
 
+    if (OVERRIDE_GOLDENFILES) {
+        std::ofstream golden_file{std::string(TEST_DATA_DIR) + "/weibull_campaign.csv.out"};
+        FaultCampaignWriter(formatter).write(golden_file, stream_events);
+    }
+
     testStreams(expected, actual);
 }
 
 TEST(FaultGenerationShouldBeDeterministic, BendelStrategy) {
-    std::vector<Signal> signals = createSignals(10);
+    BendelConfig bendel_config = {
+        .streams = {
+            BendelConfig::Stream{
+                .name = "run55",
+                .energy = 20.0 * unit::MeV,
+                .flux_phi = 1.12e8 * inverse(unit::s * unit::cm2),
+                .max_time = 89285714285714288 * unit::fs  // calculated from TestFaultStrategyBendel
+            },
+            BendelConfig::Stream{
+                .name = "run52",
+                .energy = 40.0 * unit::MeV,
+                .flux_phi = 1.19e8 * inverse(unit::s * unit::cm2),
+                .max_time = 84033613445378144 * unit::fs  // calculated from TestFaultStrategyBendel
+            },
+            BendelConfig::Stream{
+                .name = "run47",
+                .energy = 60.0 * unit::MeV,
+                .flux_phi = 9.17e7 * inverse(unit::s * unit::cm2),
+                .max_time =
+                    109051254089422032 * unit::fs  // calculated from TestFaultStrategyBendel
+            },
+        }
+    };
 
-    BendelConfig bendel_config =
-        {.streams = {
-             BendelConfig::Stream{
-                 .name = "run55",
-                 .energy = 20.0 * 1e6,
-                 .flux_phi = 1.12e8 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-             BendelConfig::Stream{
-                 .name = "run52",
-                 .energy = 40.0 * 1e6,
-                 .flux_phi = 1.19e8 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-             BendelConfig::Stream{
-                 .name = "run47",
-                 .energy = 60.0 * 1e6,
-                 .flux_phi = 9.17e7 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-         }};
-
+    std::vector<Signal> signals = createSignals(64, bendel_config.reference_cell_area, 256 * 1024);
     BendelStrategy strategy{config, bendel_config};
     std::vector<FaultEvent> stream_events = strategy.generate(signals);
 
@@ -109,11 +198,16 @@ TEST(FaultGenerationShouldBeDeterministic, BendelStrategy) {
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/bendel_campaign.csv.out");
 
+    if (OVERRIDE_GOLDENFILES) {
+        std::ofstream golden_file{std::string(TEST_DATA_DIR) + "/bendel_campaign.csv.out"};
+        FaultCampaignWriter(formatter).write(golden_file, stream_events);
+    }
+
     testStreams(expected, actual);
 }
 
 TEST(FaultGenerationShouldBeDeterministic, RandomStrategy) {
-    std::vector<Signal> signals = createSignals(10);
+    std::vector<Signal> signals = createSignals(10, 10 * unit::um2);
 
     RandomStrategy strategy{config};
     std::vector<FaultEvent> stream_events = strategy.generate(signals);
@@ -122,6 +216,11 @@ TEST(FaultGenerationShouldBeDeterministic, RandomStrategy) {
     std::stringstream actual;
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/random_campaign.csv.out");
+
+    if (OVERRIDE_GOLDENFILES) {
+        std::ofstream golden_file{std::string(TEST_DATA_DIR) + "/random_campaign.csv.out"};
+        FaultCampaignWriter(formatter).write(golden_file, stream_events);
+    }
 
     testStreams(expected, actual);
 }

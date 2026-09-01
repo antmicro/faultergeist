@@ -18,6 +18,7 @@
 
 #include "PlacementInfo.h"
 #include "SignalCollector/Cell.h"
+#include "UnitUtils.h"
 #include "Utils.h"
 
 #include <cstdint>
@@ -48,14 +49,14 @@ struct Signal {
 
     const Cell cell;
     std::string path_prefix;
-    double area;
+    unit::AREA area;
     std::optional<Placement> cell_placement;
     SignalType type = SignalType::UNKNOWN;
 
     friend std::ostream& operator<<(std::ostream& os, const Signal& signal) {
         os << "{ .path_prefix=" << signal.path_prefix;
         os << ", .cell=" << signal.cell;
-        os << ", .area=" << signal.area;
+        os << ", .area=" << std::format("{}", signal.area);
         os << ", .placement=";
         if (signal.cell_placement) {
             os << signal.cell_placement.value();

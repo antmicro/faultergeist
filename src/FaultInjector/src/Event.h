@@ -36,7 +36,7 @@ struct Event {
     };
 
     const Signal* signal;
-    int time{};
+    std::uint64_t time{};
     int bit_idx{};
     Type type{};
     std::optional<s_vpi_value> vpi_value{};

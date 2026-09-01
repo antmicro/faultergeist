@@ -16,6 +16,7 @@
 
 #include "OpenROADParser.h"
 #include "PlacementInfo.h"
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
 
@@ -23,22 +24,54 @@
 #include <cstdlib>
 #include <string>
 
+CellPlacementInfo createCellPlacement(
+    std::string_view cell_name,
+    std::string_view cell_type,
+    double width,
+    double height,
+    double x,
+    double y
+) {
+    return {
+        std::string(cell_name),
+        std::string(cell_type),
+        {width * unit::DIST::unit,
+         height * unit::DIST::unit,
+         x * unit::DIST::unit,
+         y * unit::DIST::unit}
+    };
+}
+
 std::vector<CellPlacementInfo> expected_cell_placement_info = {
-    CellPlacementInfo{"_12_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 1.782, 0},
-    CellPlacementInfo{"_13_", "INVx3_ASAP7_75t_R", 0.27, 0.27, 1.728, 0.54},
-    CellPlacementInfo{"_14_", "INVx3_ASAP7_75t_R", 0.27, 0.27, 1.458, 1.08},
-    CellPlacementInfo{"_15_", "OA21x2_ASAP7_75t_R", 0.378, 0.27, 0, 0},
-    CellPlacementInfo{"_16_", "NAND2x2_ASAP7_75t_R", 0.54, 0.27, 0.918, 1.08},
-    CellPlacementInfo{"_17_", "OR2x2_ASAP7_75t_R", 0.324, 0.27, 1.188, 1.08},
-    CellPlacementInfo{"_18_", "OAI21x1_ASAP7_75t_R", 0.432, 0.27, 0.486, 1.08},
-    CellPlacementInfo{"_19_", "AND2x4_ASAP7_75t_R", 0.54, 0.27, 0.648, 1.08},
-    CellPlacementInfo{"_20_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 0.054, 0.54},
-    CellPlacementInfo{"_21_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 0.216, 0.54},
-    CellPlacementInfo{"_22_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 1.782, 0.54},
-    CellPlacementInfo{"_23_", "TIEHIx1_ASAP7_75t_R", 0.162, 0.27, 1.026, 1.62},
-    CellPlacementInfo{"val\\[0\\]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0},
-    CellPlacementInfo{"val\\[1\\]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0.54},
-    CellPlacementInfo{"val\\[2\\]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.324, 0.54},
+    createCellPlacement("_12_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 1.782, 0),
+    createCellPlacement("_13_", "INVx3_ASAP7_75t_R", 0.27, 0.27, 1.728, 0.54),
+    createCellPlacement("_14_", "INVx3_ASAP7_75t_R", 0.27, 0.27, 1.458, 1.08),
+    createCellPlacement("_15_", "OA21x2_ASAP7_75t_R", 0.378, 0.27, 0, 0),
+    createCellPlacement("_16_", "NAND2x2_ASAP7_75t_R", 0.54, 0.27, 0.918, 1.08),
+    createCellPlacement("_17_", "OR2x2_ASAP7_75t_R", 0.324, 0.27, 1.188, 1.08),
+    createCellPlacement("_18_", "OAI21x1_ASAP7_75t_R", 0.432, 0.27, 0.486, 1.08),
+    createCellPlacement("_19_", "AND2x4_ASAP7_75t_R", 0.54, 0.27, 0.648, 1.08),
+    createCellPlacement("_20_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 0.054, 0.54),
+    createCellPlacement("_21_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 0.216, 0.54),
+    createCellPlacement("_22_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 1.782, 0.54),
+    createCellPlacement("_23_", "TIEHIx1_ASAP7_75t_R", 0.162, 0.27, 1.026, 1.62),
+    createCellPlacement("val\\[0\\]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0),
+    createCellPlacement(
+        "val\\[1\\]$_DFF_PP1_",
+        "DFFASRHQNx1_ASAP7_75t_R",
+        1.404,
+        0.27,
+        0.378,
+        0.54
+    ),
+    createCellPlacement(
+        "val\\[2\\]$_DFF_PP1_",
+        "DFFASRHQNx1_ASAP7_75t_R",
+        1.404,
+        0.27,
+        0.324,
+        0.54
+    ),
 };
 
 TEST(OpenROADParsing, ExtractFromExampleCSV) {
@@ -48,15 +81,15 @@ TEST(OpenROADParsing, ExtractFromExampleCSV) {
 
     auto device_info = parse_result.getDeviceInfo();
     ASSERT_TRUE(device_info);
-    EXPECT_DOUBLE_EQ(device_info->height, 2);
-    EXPECT_DOUBLE_EQ(device_info->width, 2);
+    EXPECT_QUANTITY_DOUBLE_EQ(device_info->height, 2 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(device_info->width, 2 * unit::DIST::unit);
 
     for (const auto& expected : expected_cell_placement_info) {
         auto actual = parse_result.getCellPlacement(expected.name);
         ASSERT_TRUE(actual);
-        EXPECT_EQ(actual->height, expected.placement.height);
-        EXPECT_EQ(actual->width, expected.placement.width);
-        EXPECT_EQ(actual->x, expected.placement.x);
-        EXPECT_EQ(actual->y, expected.placement.y);
+        EXPECT_QUANTITY_DOUBLE_EQ(actual->height, expected.placement.height);
+        EXPECT_QUANTITY_DOUBLE_EQ(actual->width, expected.placement.width);
+        EXPECT_QUANTITY_DOUBLE_EQ(actual->x, expected.placement.x);
+        EXPECT_QUANTITY_DOUBLE_EQ(actual->y, expected.placement.y);
     }
 }

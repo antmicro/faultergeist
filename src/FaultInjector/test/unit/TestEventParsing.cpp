@@ -23,7 +23,8 @@ namespace {
 
 class EventParserTester : public fin::EventParser {
    public:
-    EventParserTester() {
+    EventParserTester(double multiplier = 1.0) {
+        time_multiplier = multiplier;
         insertSignal({"TOP.test_signal", nullptr, 0});
         insertSignal({"TOP.another_sig", nullptr, 0});
         insertSignal({"TOP.sig", nullptr, 0});
@@ -62,6 +63,24 @@ TEST(EventParsing, ReturnsNulloptForUnknownType) {
     std::string_view sig_path;
     auto result = parser.parse_line("100,TOP.sig,0,unknown");
     EXPECT_FALSE(result.has_value());
+}
+
+TEST(EventParsing, ScalesFemtosecondsToDifferentSimulationUnits) {
+    struct TestCase {
+        double multiplier;
+        int expected_ticks;
+    };
+
+    for (const auto [multiplier, expected_ticks] : {
+             TestCase{1.0, 1'000'000},  // fs
+             TestCase{0.001, 1'000},    // ps
+             TestCase{0.000001, 1},     // ns
+         }) {
+        EventParserTester parser{multiplier};
+        auto result = parser.parse_line("1000000,TOP.sig,0,seu");
+        ASSERT_TRUE(result.has_value());
+        EXPECT_EQ(result->time, expected_ticks);
+    }
 }
 
 }  // namespace

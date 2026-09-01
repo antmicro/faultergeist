@@ -26,6 +26,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(slang)
 
+FetchContent_Declare(
+    mp-units
+    GIT_REPOSITORY https://github.com/mpusz/mp-units.git
+    GIT_TAG v2.5.0
+)
+set(MP_UNITS_API_CONTRACTS NONE CACHE STRING "Enable contract checking" FORCE)
+FetchContent_GetProperties(mp-units)
+if(NOT mp-units_POPULATED)
+    FetchContent_Populate(mp-units)
+
+    add_subdirectory(
+        ${mp-units_SOURCE_DIR}/src
+        ${mp-units_BINARY_DIR}
+    )
+endif()
+
 
 if(BUILD_TESTING)
   FetchContent_Declare(

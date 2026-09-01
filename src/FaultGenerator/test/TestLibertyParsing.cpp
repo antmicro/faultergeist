@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "LibertyParser.h"
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
 
@@ -25,7 +26,8 @@
 TEST(LibParsing, ExtractFromExampleLib) {
     auto filepath = std::string(TEST_DATA_DIR) + "/example.lib";
 
-    auto parse_result = LibertyParser::parse(filepath);
+    auto parser = LibertyParser(1 * unit::um2);
+    auto parse_result = parser.parse(filepath);
     ASSERT_TRUE(parse_result);
 
     const auto actual = *parse_result;
@@ -33,15 +35,15 @@ TEST(LibParsing, ExtractFromExampleLib) {
     // Cell DVBX1
     ASSERT_TRUE(actual.cells.contains("DCBX1"));
     ASSERT_TRUE(actual.cells.at("DCBX1").area);
-    EXPECT_DOUBLE_EQ(actual.cells.at("DCBX1").area.value(), 18.0001);
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.cells.at("DCBX1").area.value(), 18.0001 * unit::um2);
 
     // Cell INVX1
     ASSERT_TRUE(actual.cells.contains("INVX1"));
     ASSERT_TRUE(actual.cells.at("INVX1").area);
-    EXPECT_DOUBLE_EQ(actual.cells.at("INVX1").area.value(), 3);
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.cells.at("INVX1").area.value(), 3 * unit::um2);
 
     // Cell NAND2X1
     ASSERT_TRUE(actual.cells.contains("NAND2X1"));
     ASSERT_TRUE(actual.cells.at("NAND2X1").area);
-    EXPECT_DOUBLE_EQ(actual.cells.at("NAND2X1").area.value(), 4);
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.cells.at("NAND2X1").area.value(), 4 * unit::um2);
 }

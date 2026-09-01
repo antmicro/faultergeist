@@ -21,6 +21,7 @@
 #include "LogUtils.h"
 #include "ScheduledEvent.h"
 #include "Signal.h"
+#include "UnitUtils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -38,26 +39,32 @@ concept EventTimeGenerator = requires(
     const Stream& stream,
     FaultStrategy::RandomGen& random
 ) {
-    { generator(signal, stream, random) } -> std::convertible_to<double>;
+    { generator(signal, stream, random) } -> std::convertible_to<unit::TIME>;
 };
 
 template <typename Calculator, typename Stream>
 concept MaxTimeCalculator = requires(const Calculator& calculator, const Stream& stream) {
-    { calculator(stream) } -> std::convertible_to<double>;
+    { calculator(stream) } -> std::convertible_to<unit::SIM_TIME>;
 };
 
 template <
+    // Concept of a stream is dependent on Model used
     typename Stream,
+
+    // EventTimeGeneratorT is a functional that returns generated time that should
+    // pass between particular fault events.
     EventTimeGenerator<Stream> EventTimeGeneratorT,
+
+    // MaxTimeCalculatorT is a functional that returns maximal the stream should
+    // be alive. FaultStrategyRunner will take minimum of that and global simulation_time.
     MaxTimeCalculator<Stream> MaxTimeCalculatorT>
 class FaultStrategyRunner {
     const EventTimeGeneratorT& evTimeGenerator;
     const MaxTimeCalculatorT& maxTimeCalc;
     const FaultStrategy::Config& config;
-    FaultStrategy::RandomGen& gen;
     std::span<const Stream> streams;
     std::span<const Signal> signals;
-    std::vector<double> max_times;
+    std::vector<unit::SIM_TIME> max_times;
 
    public:
     explicit FaultStrategyRunner(
@@ -65,36 +72,40 @@ class FaultStrategyRunner {
         const MaxTimeCalculatorT& maxTimeCalc,
         const FaultStrategy::Config& config,
         std::span<const Stream> streams,
-        std::span<const Signal> signals,
-        FaultStrategy::RandomGen& gen
+        std::span<const Signal> signals
     )
         : evTimeGenerator(eventTimeGenerator),
           maxTimeCalc(maxTimeCalc),
           config(config),
-          gen(gen),
           streams(streams),
           signals(signals) {
         SEE_CHECK(streams.size() > 0) << "No streams read";
         max_times.reserve(streams.size());
         for (std::size_t i = 0; i < streams.size(); i++) {
-            max_times.push_back(
-                std::min(static_cast<double>(config.simulation_time), maxTimeCalc(streams[i]))
-            );
-            LOG(INFO) << "Calculated Stream " << i << " max time: " << max_times[i];
+            max_times.push_back(std::min(config.simulation_time, maxTimeCalc(streams[i])));
+            LOG(INFO) << "Calculated Stream " << i
+                      << " max time: " << std::format("{}", max_times[i]);
         }
     }
 
-    std::pair<double, double> scheduleWorkTime(std::size_t worker_id) const {
+    std::pair<unit::TIME, unit::SIM_TIME> scheduleWorkTime(std::size_t worker_id) const {
         auto max_elem = std::max_element(max_times.begin(), max_times.end());
-        double begin = *max_elem * worker_id / config.thread_number;
-        double end = *max_elem * (worker_id + 1) / config.thread_number;
+        const auto max_time = max_elem->numerical_value_in(unit::SIM_TIME::unit);
+        const auto boundary = [&](std::size_t worker) {
+            return (max_time / config.thread_number * worker +
+                    max_time % config.thread_number * worker / config.thread_number) *
+                   unit::SIM_TIME::unit;
+        };
+        auto begin = boundary(worker_id);
+        auto end = boundary(worker_id + 1);
         LOG(INFO) << "Worker #" << worker_id << " [out of " << config.thread_number
-                  << "] will work on {" << begin << ", " << end << "} (max_time: " << *max_elem
-                  << ")";
+                  << "] will work on {" << std::format("{},{}", begin, end) << "} "
+                  << std::format("(max_time: {})", *max_elem);
         return {begin, end};
     }
 
     std::vector<FaultEvent> generateInParallelByTimeSlice() const {
+        FaultStrategy::RandomGen gen = FaultStrategy::RandomGen(config.seed);
         if (config.thread_number == 1) {
             // if there is only one thread allowed, don't spawn another one
             const auto [begin, end] = scheduleWorkTime(0);
@@ -112,13 +123,16 @@ class FaultStrategyRunner {
         std::vector<std::future<std::size_t>> workers;
         for (std::size_t i = 0; i < config.thread_number; ++i) {
             const auto [begin, end] = scheduleWorkTime(i);
-            workers.push_back(std::async(
-                std::launch::async,
-                [this, i, begin, end, &partial_results, &worker_generators]() {
-                    partial_results[i] = generateSingleTimeSlice(worker_generators[i], begin, end);
-                    return partial_results[i].size();
-                }
-            ));
+            workers.push_back(
+                std::async(
+                    std::launch::async,
+                    [this, i, begin, end, &partial_results, &worker_generators]() {
+                        partial_results[i] =
+                            generateSingleTimeSlice(worker_generators[i], begin, end);
+                        return partial_results[i].size();
+                    }
+                )
+            );
         }
 
         std::size_t total_events = 0;
@@ -139,11 +153,11 @@ class FaultStrategyRunner {
 
     std::vector<FaultEvent> generateSingleTimeSlice(
         FaultStrategy::RandomGen& worker_gen,
-        double begin_time,
-        double end_time
+        unit::TIME begin_time,
+        unit::SIM_TIME end_time
     ) const {
-        LOG(INFO) << "Weibull strategy generating on time slice from " << begin_time << " to "
-                  << end_time;
+        LOG(INFO) << "Strategy generating on time slice from "
+                  << std::format("{} to {}", begin_time, end_time);
         std::vector<FaultEvent> result;
         std::uniform_int_distribution<std::uint32_t> int_dist;
 
@@ -169,7 +183,8 @@ class FaultStrategyRunner {
             const ScheduledEvent next = event_queue.top();
             event_queue.pop();
 
-            if (next.time >= std::min(max_times[next.stream_id], end_time)) {
+            auto end = std::min(max_times[next.stream_id], end_time);
+            if (next.time >= end || next.time >= unit::MAX_SIM_TIME) {
                 continue;
             }
             if (config.tooManyEventsGenerated(result.size())) {
@@ -177,14 +192,14 @@ class FaultStrategyRunner {
                                 " the config. Stoping generation.";
                 // this exposes that in the previous implementation config limited number of events
                 // per stream, not overall as it was supposed to
-                continue;
+                break;
             }
 
             const auto& signal = signals[next.signal_id];
             const auto& stream = streams[next.stream_id];
             result.emplace_back(
-                signals.cbegin() + next.signal_id,
-                static_cast<std::uint64_t>(next.time),
+                signals.begin() + next.signal_id,
+                unit::toSimTime(next.time),
                 /*signal_path=*/"",
                 int_dist(
                     worker_gen.random_generator,

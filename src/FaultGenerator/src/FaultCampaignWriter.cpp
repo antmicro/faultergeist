@@ -26,7 +26,10 @@
 void FaultCampaignWriter::write(std::ostream& os, const std::vector<FaultEvent>& campaign) const {
     for (const FaultEvent& event : campaign) {
         const auto ev = formatter(event);
-        os << ev.time << ',' << ev.signal_path << ',' << ev.bit_index << ',' << ev.type << "\n";
+        os << ev.time.numerical_value_in(unit::SIM_TIME::unit) << ',';
+        os << ev.signal_path << ',';
+        os << ev.bit_index << ',';
+        os << ev.type << "\n";
     }
 }
 

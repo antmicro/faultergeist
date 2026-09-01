@@ -1,5 +1,5 @@
-1,top.worker.dff_worker0.counter,6,seu
-1,top.worker.dff_worker0.counter,24,seu
-3,top.worker.dff_worker0.counter,12,seu
-4,top.worker.dff_worker0.counter,22,seu
-6,top.worker.dff_worker0.resp,12,seu
+1000,top.worker.dff_worker0.counter,6,seu
+1000,top.worker.dff_worker0.counter,24,seu
+3000,top.worker.dff_worker0.counter,12,seu
+4000,top.worker.dff_worker0.counter,22,seu
+6000,top.worker.dff_worker0.resp,12,seu

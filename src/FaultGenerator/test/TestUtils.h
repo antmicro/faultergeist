@@ -17,10 +17,17 @@
 #pragma once
 
 #include "Signal.h"
+#include "UnitUtils.h"
 
 #include <gtest/gtest.h>
 
 #include <istream>
+
+#define EXPECT_QUANTITY_DOUBLE_EQ(actual, expected) \
+    EXPECT_DOUBLE_EQ( \
+        (actual).numerical_value_in((expected).unit), \
+        (expected).numerical_value_in((expected).unit) \
+    )
 
 static void testStreams(std::istream& s1, std::istream& s2) {
     int counter = 0;
@@ -37,20 +44,24 @@ static void testStreams(std::istream& s1, std::istream& s2) {
     }
 }
 
-const double DEFAULT_CELL_AREA = 0.25 * 1e-6;  // [cm^2]
-
-static std::vector<Signal> createSignals(size_t count) {
+static std::vector<Signal> createSignals(
+    size_t count,
+    unit::AREA cell_area,
+    std::uint32_t cell_width = 1024
+) {
     std::vector<Signal> signals;
     signals.reserve(count);
     for (size_t i = 0; i < count; ++i) {
         std::string signal_name = "signal_" + std::to_string(i);
-        signals.push_back(Signal{
-            Cell{.name = signal_name, .width = 1024},
-            /*prefix_path=*/"",
-            DEFAULT_CELL_AREA,
-            std::nullopt,
-            SignalType::REGISTER
-        });
+        signals.push_back(
+            Signal{
+                Cell{.name = signal_name, .width = cell_width},
+                /*prefix_path=*/"",
+                cell_area,
+                std::nullopt,
+                SignalType::REGISTER
+            }
+        );
     }
     return signals;
 }

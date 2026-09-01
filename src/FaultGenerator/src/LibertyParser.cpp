@@ -369,7 +369,7 @@ std::optional<LibertyInfo> LibertyParser::parse(const std::string& filepath) {
                 res.cells.insert(
                     {std::string(name),
                      CellInfo{
-                         .area = area,
+                         .area = area.transform([this](double area) { return area * area_scale; }),
                          .ff_info = ff_info,
                      }}
                 );

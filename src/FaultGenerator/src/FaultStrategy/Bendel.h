@@ -17,20 +17,38 @@
 #pragma once
 
 #include "FaultStrategy.h"
+#include "UnitUtils.h"
 
 struct BendelConfig {
     struct Stream {
-        std::string name = "";  // Stream name
-        double A = 2.4704718;   // Limiting cross-section [MeV]
-        double B = 0.7964778;   // [MeV]
-        double energy;          // Proton energy [MeV]
-        double flux_phi;        // [s^-1 * cm^-2]
-        double fluence;
+        std::string name = "";    // Stream name
+        unit::ENERGY energy;      // Proton energy
+        unit::FLUX flux_phi;      // Proton fluence rate
+        unit::SIM_TIME max_time;  // Duration of the stream
+
+        bool isValid(unit::ENERGY A);
+        friend std::ostream& operator<<(std::ostream& os, const Stream& s) {
+            os << "{ ";
+            std::print(
+                os,
+                "name={}, energy={}, flux_phi={}, max_time={}",
+                s.name,
+                s.energy,
+                s.flux_phi,
+                s.max_time
+            );
+            return os << " }";
+        }
     };
     std::vector<Stream> streams;
-    std::uint32_t bit_count = 1 << 24;                  // 16MB
-    double device_area = 5.6 /*[mm]*/ * 10.2 /*[mm]*/;  // [mm^2]
-    int num_cells = 64;
+
+    // Fit to the MT4LC4M4B1D28M 3.3 V per-bit cross-sections.
+    unit::ENERGY A = 2.4704718 * unit::MeV;
+    unit::ENERGY B = 1.7468882 * unit::MeV;
+
+    // Reference cell area adjusting other parameters, compared to source experimental
+    // data.
+    unit::AREA reference_cell_area = 3.4046173095703125 * unit::um2;
 };
 
 class BendelStrategy : public FaultStrategy {
@@ -41,5 +59,5 @@ class BendelStrategy : public FaultStrategy {
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:
-    double eventTime(const Signal&, const BendelConfig::Stream&, FaultStrategy::RandomGen&);
+    unit::TIME eventTime(const Signal&, const BendelConfig::Stream&, FaultStrategy::RandomGen&);
 };

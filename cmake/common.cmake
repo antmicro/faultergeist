@@ -453,7 +453,7 @@ function(fi_configure_file INPUT)
 endfunction()
 
 # fi_add_fault_campaign(<target>
-#   [OUTPUT <path>] [CONFIG <path> | CONFIG_FILE <path>]
+#   [ALLOW_EMPTY] [OUTPUT <path>] [CONFIG <path> | CONFIG_FILE <path>]
 #   [WORK_DIR <dir>] [SIMULATION_DIR <dir>]
 #   [ARGS <args...>] [DEPENDS <deps...>])
 #
@@ -474,6 +474,7 @@ endfunction()
 #                     ${SIMULATION_DIR}/config.json.
 #   ARGS              Direct faultergeist-gen arguments. When ARGS is
 #                     non-empty, no implicit config file is added.
+#   ALLOW_EMPTY       Do not fail when the generated campaign is empty.
 #
 # OUTPUT may be a stamp file. When OUTPUT differs from FAULT_CAMPAIGN_OUT, the
 # campaign path is registered as a byproduct.
@@ -481,7 +482,7 @@ endfunction()
 # On rerun, the helper removes OUTPUT and FAULT_CAMPAIGN_OUT, recreates the
 # required directories, invokes the tool, then touches OUTPUT.
 function(fi_add_fault_campaign NAME)
-  set(options)
+  set(options ALLOW_EMPTY)
   set(one_value_args OUTPUT CONFIG_FILE WORK_DIR SIMULATION_DIR)
   set(multi_value_args ARGS DEPENDS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -525,12 +526,22 @@ function(fi_add_fault_campaign NAME)
   set(_depends faultergeist-gen ${FI_CONFIG} ${FI_DEPENDS})
   _fi_resolve_pdk_path_and_append_dependency(_depends)
 
+  set(_check_campaign)
+  if(NOT FI_ALLOW_EMPTY)
+    set(_check_campaign
+      COMMAND "${CMAKE_COMMAND}"
+        "-DFI_FAULT_CAMPAIGN=${FI_FAULT_CAMPAIGN_OUT}"
+        -P "${FI_E2E_SCRIPT_DIR}/check_fault_campaign.cmake"
+    )
+  endif()
+
   add_custom_command(
     OUTPUT "${FI_OUTPUT}"
     ${_byproducts}
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${FI_OUTPUT}" "${FI_FAULT_CAMPAIGN_OUT}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory ${_make_dirs}
     COMMAND ${_command}
+    ${_check_campaign}
     COMMAND "${CMAKE_COMMAND}" -E touch "${FI_OUTPUT}"
     DEPENDS ${_depends}
     VERBATIM

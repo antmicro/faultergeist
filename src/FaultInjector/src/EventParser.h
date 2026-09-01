@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "Signal.h"
+#include "vpi_user.h"
 
 #include <filesystem>
 #include <fstream>
@@ -35,6 +35,7 @@ class EventParser {
 
    protected:
     std::unordered_map<std::string_view, Signal> signals;
+    double time_multiplier = 1.0;
 
     EventParser() = default;
     std::optional<Event> parse(std::string_view);

@@ -14,22 +14,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "FaultStrategyRandom.h"
+#include "Random.h"
+
+#include "FaultEvent.h"
+#include "FaultStrategy.h"
+#include "UnitUtils.h"
 
 #include <algorithm>
 #include <random>
-#include "Constants.h"
-#include "FaultEvent.h"
-#include "FaultStrategy.h"
 
 RandomStrategy::RandomStrategy(const Config& config) : FaultStrategy(config) {}
 
 std::vector<FaultEvent> RandomStrategy::generate(std::span<const Signal> signals) {
-    std::vector<uint64_t> time_values;
+    FaultStrategy::RandomGen gen = FaultStrategy::RandomGen(config.seed);
+    std::vector<unit::SIM_TIME> time_values;
     time_values.reserve(config.num_of_events);
-    std::uniform_int_distribution<std::uint64_t> time_dist{0, config.simulation_time};
+    std::uniform_int_distribution<unit::SIM_TIME::rep> time_dist{
+        0, config.simulation_time.numerical_value_in(unit::SIM_TIME::unit)
+    };
     for (unsigned int index = 0; index < config.num_of_events; ++index) {
-        time_values.push_back(time_dist(gen.random_generator));
+        time_values.push_back(time_dist(gen.random_generator) * unit::SIM_TIME::unit);
     }
     std::sort(time_values.begin(), time_values.end());
 
@@ -46,14 +50,16 @@ std::vector<FaultEvent> RandomStrategy::generate(std::span<const Signal> signals
         const Signal& signal = signals[idx];
 
         fault_events.emplace_back(
-            signals.begin() + idx,
-            time_values[index],
-            /*signal_path=*/"",
-            int_dist(
-                gen.random_generator,
-                std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
-            ),
-            faultEventType(signal.type)
+            FaultEvent{
+                signals.begin() + idx,
+                time_values[index],
+                /*signal_path=*/"",
+                int_dist(
+                    gen.random_generator,
+                    std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
+                ),
+                faultEventType(signal.type)
+            }
         );
     }
     return fault_events;

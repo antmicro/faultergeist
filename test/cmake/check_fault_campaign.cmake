@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+
+if(IS_DIRECTORY "${FI_FAULT_CAMPAIGN}")
+  file(GLOB_RECURSE _campaign_files LIST_DIRECTORIES false "${FI_FAULT_CAMPAIGN}/*")
+  if(NOT _campaign_files)
+    message(FATAL_ERROR "Fault campaign directory is empty: ${FI_FAULT_CAMPAIGN}")
+  endif()
+else()
+  set(_campaign_files "${FI_FAULT_CAMPAIGN}")
+endif()
+
+foreach(_campaign_file IN LISTS _campaign_files)
+  if(NOT EXISTS "${_campaign_file}")
+    message(FATAL_ERROR "Fault campaign was not generated: ${_campaign_file}")
+  endif()
+  file(SIZE "${_campaign_file}" _campaign_size)
+  if(_campaign_size EQUAL 0)
+    message(FATAL_ERROR "Fault campaign is empty: ${_campaign_file}")
+  endif()
+endforeach()

@@ -14,67 +14,81 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <vector>
 
 #include "FaultEvent.h"
-#include "FaultStrategy.h"
-#include "FaultStrategyBendel.h"
-#include "FaultStrategyWeibull.h"
+#include "FaultStrategy/Bendel.h"
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
 
 namespace {
 
-const double DEFAULT_CELL_AREA = 0.8925 * 1e-6;  // [um^2]
-
-std::vector<Signal> createSignals(std::size_t count) {
-    std::vector<Signal> signals;
-    signals.reserve(count);
-    for (std::size_t i = 0; i < count; ++i) {
-        std::string signal_name = "signal_" + std::to_string(i);
-        signals.push_back(Signal{
-            Cell{.name = signal_name, .width = 1024},
-            /*prefix_path=*/"",
-            DEFAULT_CELL_AREA,
-            std::nullopt,
-            SignalType::REGISTER
-        });
-    }
-    return signals;
-}
+const auto DEFAULT_CELL_AREA = 3.4046173095703125 * unit::um2;
 
 }  // anonymous namespace
 
+struct BendelTestStream {
+    std::string name = "";  // Stream name
+    unit::ENERGY energy;    // Proton energy
+    unit::FLUX flux_phi;    // Proton fluence rate
+    unit::quantity<inverse(unit::cm2)> fluence;
+
+    BendelConfig::Stream toBendelStream() const {
+        return {
+            .name = name,
+            .energy = energy,
+            .flux_phi = flux_phi,
+            .max_time = unit::toSimTime(fluence / flux_phi)
+        };
+    }
+};
+
+// From bendel_fit.py
+std::vector<BendelConfig::Stream> streams = {
+    BendelTestStream{
+        .name = "run55",
+        .energy = 20.0 * unit::MeV,
+        .flux_phi = 1.12e8 * inverse(unit::s * unit::cm2),
+        .fluence = 1e10 * inverse(unit::cm2)
+    }
+        .toBendelStream(),
+    BendelTestStream{
+        .name = "run52",
+        .energy = 40.0 * unit::MeV,
+        .flux_phi = 1.19e8 * inverse(unit::s * unit::cm2),
+        .fluence = 1e10 * inverse(unit::cm2)
+    }
+        .toBendelStream(),
+    BendelTestStream{
+        .name = "run47",
+        .energy = 60.0 * unit::MeV,
+        .flux_phi = 9.17e7 * inverse(unit::s * unit::cm2),
+        .fluence = 1e10 * inverse(unit::cm2)
+    }
+        .toBendelStream(),
+};
+
 TEST(BendelGenerationTest, CountsWithinTolerance) {
-    // From bendel_fit.py
     constexpr std::array expected_counts = {344, 621, 862};
-    constexpr std::uint64_t expected_total = 1645;
+    constexpr std::uint64_t expected_total =
+        std::accumulate(expected_counts.begin(), expected_counts.end(), 0);
     constexpr double stream_tolerance = 0.35;
     constexpr double total_tolerance = 0.05;
     constexpr std::size_t samples = 10;
 
-    std::vector<Signal> signals = createSignals(100);
+    std::vector<Signal> signals = createSignals(16 * 1024, DEFAULT_CELL_AREA, 1024);
 
     FaultStrategy::Config config{
         .num_of_events = 0,
         .seed = 42,
-        .simulation_time = 9999999,
+        .simulation_time = 9999999 * unit::s,
         .thread_number = 1,
-    };
-
-    std::vector<BendelConfig::Stream> streams = {
-        BendelConfig::Stream{
-            .name = "run55", .energy = 20.0 * 1e6, .flux_phi = 1.12e8 * 1e4, .fluence = 1e10 * 1e4
-        },
-        BendelConfig::Stream{
-            .name = "run52", .energy = 40.0 * 1e6, .flux_phi = 1.19e8 * 1e4, .fluence = 1e10 * 1e4
-        },
-        BendelConfig::Stream{
-            .name = "run47", .energy = 60.0 * 1e6, .flux_phi = 9.17e7 * 1e4, .fluence = 1e10 * 1e4
-        },
     };
 
     std::vector<FaultEvent> all_events;
@@ -100,36 +114,16 @@ TEST(BendelGenerationTest, CountsWithinTolerance) {
 }
 
 TEST(BendelGenerationTest, WhenInParallelResultIsSorted) {
-    std::vector<Signal> signals = createSignals(100);
+    std::vector<Signal> signals = createSignals(10, 10 * unit::um2, 10);
 
     FaultStrategy::Config config{
         .num_of_events = 0,
         .seed = 42,
-        .simulation_time = 9999999,
+        .simulation_time = 9999999 * unit::s,
         .thread_number = 4u,
     };
 
-    BendelConfig bendel_config =
-        {.streams = {
-             BendelConfig::Stream{
-                 .name = "run55",
-                 .energy = 20.0 * 1e6,
-                 .flux_phi = 1.12e8 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-             BendelConfig::Stream{
-                 .name = "run52",
-                 .energy = 40.0 * 1e6,
-                 .flux_phi = 1.19e8 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-             BendelConfig::Stream{
-                 .name = "run47",
-                 .energy = 60.0 * 1e6,
-                 .flux_phi = 9.17e7 * 1e4,
-                 .fluence = 1e10 * 1e4
-             },
-         }};
+    BendelConfig bendel_config = {.streams = streams};
 
     BendelStrategy strategy{config, bendel_config};
     std::vector<FaultEvent> stream_events = strategy.generate(signals);

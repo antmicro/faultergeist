@@ -43,14 +43,14 @@ Liberty::Liberty(const std::vector<LibertyInfo>& infos_) : infos(infos_) {
     }
 }
 
-Liberty::Liberty(const std::vector<std::string>& filepaths)
-    : Liberty(LibertyParser::parseFiles(filepaths)) {}
+Liberty::Liberty(unit::AREA area_scale, const std::vector<std::string>& filepaths)
+    : Liberty(LibertyParser(area_scale).parseFiles(filepaths)) {}
 
 bool Liberty::isFF(std::string_view type) const {
     return ff_types.contains(type);
 }
 
-std::optional<double> Liberty::getArea(std::string_view type) const {
+std::optional<unit::AREA> Liberty::getArea(std::string_view type) const {
     if (auto res = cell_areas.find(type); res != cell_areas.end()) {
         return res->second;
     } else {

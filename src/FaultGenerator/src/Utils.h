@@ -18,15 +18,7 @@
 
 #include <absl/strings/str_cat.h>
 
-#include <atomic>
 #include <cstring>
-#include <numbers>
-
-namespace seu {
-static consteval double deg2rad(double deg) {
-    return deg * std::numbers::pi / 180.0;
-}
-};  // namespace seu
 
 struct CharSet {
     const char* set;

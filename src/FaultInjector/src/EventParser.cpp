@@ -22,15 +22,23 @@
 #include "Utils.h"
 
 #include <cassert>
+#include <charconv>
+#include <cmath>
 
 #include "vpi_user.h"
 
 namespace fin {
 
+// NOTE: femtoseconds are hard coded into the generator.
+// The value below should not be changed without adjusting generator
+constexpr int FEMTOSECONDS_TIME_PRECISION = -15;
+
 EventParser::EventParser(const std::filesystem::path& scenario_filepath)
     : scenario(scenario_filepath) {
     vpiHandle vhi = vpi_iterate(vpiModule, nullptr);
     gatherSignals(vhi, 0);
+    time_multiplier =
+        std::pow(10.0, FEMTOSECONDS_TIME_PRECISION - vpi_get(vpiTimePrecision, nullptr));
     if (!scenario) {
         std::error_code ec(errno, std::generic_category());
         fin_printf(
@@ -87,8 +95,9 @@ void EventParser::insertSignal(Signal signal) {
     signals.insert(std::move(node));
 }
 
-std::optional<int> parseInt(std::string_view str) {
-    int result;
+template <typename INT>
+std::optional<INT> parseInt(std::string_view str) {
+    INT result;
     const auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
     if (ec != std::errc{} || ptr != str.data() + str.size()) {
         return std::nullopt;
@@ -135,12 +144,13 @@ std::optional<Event> EventParser::parse(std::string_view line) {
         return printFailedToParseLineError();
     }
 
-    auto time = parseInt(time_str);
-    auto bit_idx = parseInt(bit_idx_str);
+    auto time = parseInt<std::uint64_t>(time_str);
+    auto bit_idx = parseInt<int>(bit_idx_str);
 
     if (!time || !bit_idx) {
         return printFailedToParseLineError();
     }
+    std::uint64_t scaled_time = *time * time_multiplier;
 
     auto it = signals.find(sig_path);
     if (it == signals.end()) {
@@ -153,7 +163,7 @@ std::optional<Event> EventParser::parse(std::string_view line) {
 
     return Event{
         .signal = &it->second,
-        .time = *time,
+        .time = scaled_time,
         .bit_idx = *bit_idx,
         .type = type,
     };

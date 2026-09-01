@@ -16,20 +16,25 @@
 
 #pragma once
 
+#include "UnitUtils.h"
+
 #include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
 
 struct Placement {
-    double width;
-    double height;
-    double x;
-    double y;
+    unit::DIST width;
+    unit::DIST height;
+    unit::DIST x;
+    unit::DIST y;
 
     friend std::ostream& operator<<(std::ostream& os, const Placement& pos) {
-        return os << "{ .width=" << pos.width << ", .height=" << pos.height << ", .x=" << pos.x
-                  << ", .y=" << pos.y << " }";
+        return os << "{ "
+                  << std::format(
+                         ".width={}, .height={}, .x={}, .y={}", pos.width, pos.height, pos.x, pos.y
+                     )
+                  << " }";
     }
 };
 

@@ -17,7 +17,7 @@
 #include "FaultCampaignWriter.h"
 #include "FaultEvent.h"
 #include "FaultEventsSignalFormatter.h"
-#include "FaultStrategy.h"
+#include "FaultStrategy/FaultStrategy.h"
 #include "GlobalOpts.h"
 #include "Liberty.h"
 #include "LogUtils.h"
@@ -153,7 +153,7 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
 
 int main(int argc, char* argv[]) {
     const GlobalOpts opts = GlobalOpts::parseCmdArgs(argc, argv);
-    const Liberty liberty = Liberty(opts.liberty_paths);
+    const Liberty liberty = Liberty(opts.liberty_area_scale, opts.liberty_paths);
     const PlacementInfo open_road{};
 
     SEE_CHECK(opts.campaign_number >= 1) << "Cannot run less than one campaign";

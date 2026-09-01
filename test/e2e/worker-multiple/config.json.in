@@ -6,12 +6,13 @@
   "params": {
     "seed": 42,
     "num_of_events": 10,
-    "simulation_time": 10,
+    "simulation_time": "10ps",
     "sig_path_prefix": "top",
     "top_module": "@DESIGN_TOP@",
     "top_instance": "worker.dff_worker0",
     "netlist_path": "@JSON_NETLIST@",
     "campaign_number": 10,
+    "liberty_area_scale": "1um2",
     "fault_campaign_out": "@CAMPAIGN_DIR@",
     "thread_number": @FI_E2E_JOBS@,
     "liberty_paths": [ @LIB_FILES@ ]

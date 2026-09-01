@@ -23,11 +23,13 @@
 
 #include <bitset>
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <queue>
+#include <sstream>
 #include <string>
 
 namespace fin {
@@ -74,19 +76,25 @@ class FaultInjector {
     static PLI_INT32 AtNextSimTimeCallback(t_cb_data* data) {
         auto* self = reinterpret_cast<FaultInjector*>(data->user_data);
         auto t = getVpiTime();
+        const std::uint64_t current_time = timeValue(t);
         fin_printf(
-            const_cast<char*>("- [@%d] %s iterating\n"), t.low, cbReasonToString(data->reason)
+            const_cast<char*>("- [@%llu] %s iterating\n"),
+            static_cast<unsigned long long>(current_time),
+            cbReasonToString(data->reason)
         );
 
-        const PLI_UINT32 next_event_time = self->simulateSingleEventEffects();
+        const std::uint64_t next_event_time = self->simulateSingleEventEffects();
         if (next_event_time == 0) {
-            fin_printf(const_cast<char*>("- [@%d] Last fault emitted\n"), t.low);
+            fin_printf(
+                const_cast<char*>("- [@%llu] Last fault emitted\n"),
+                static_cast<unsigned long long>(current_time)
+            );
             return 0;
         }
-        const PLI_UINT32 next_time = next_event_time - t.low;
+        const std::uint64_t next_time = next_event_time - current_time;
 
         s_cb_data cb_data{};
-        s_vpi_time time = {t.type, 0, next_time, 0};
+        s_vpi_time time = toVpiTime(next_time);
         cb_data.cb_rtn = AtNextSimTimeCallback;
         cb_data.obj = nullptr;
         cb_data.reason = data->reason;
@@ -94,10 +102,10 @@ class FaultInjector {
         cb_data.user_data = reinterpret_cast<PLI_BYTE8*>(self);
 
         fin_printf(
-            const_cast<char*>("- [@%d] Registering next %s Callback, next event at @%d\n"),
-            t.low,
+            const_cast<char*>("- [@%llu] Registering next %s Callback, next event at @%llu\n"),
+            static_cast<unsigned long long>(current_time),
             cbReasonToString(cb_data.reason),
-            next_event_time
+            static_cast<unsigned long long>(next_event_time)
         );
 
         ManagedVpiHandle handle = vpi_register_cb(&cb_data);
@@ -119,8 +127,9 @@ class FaultInjector {
         }
     }
 
-    PLI_UINT32 simulateSingleEventEffects() {
+    std::uint64_t simulateSingleEventEffects() {
         auto t = getVpiTime();
+        const std::uint64_t current_time = timeValue(t);
 
         while (!eventParser.eof()) {
             if (!leftover_event) {
@@ -131,13 +140,13 @@ class FaultInjector {
             }
 
             if (transient_events.empty() || transient_events.top().time > leftover_event->time) {
-                if (leftover_event->time > t.low) {
+                if (leftover_event->time > current_time) {
                     return leftover_event->time;
                 }
                 simulateSingleEventEffect(t, *leftover_event);
                 leftover_event.reset();
             } else {
-                if (transient_events.top().time > t.low) {
+                if (transient_events.top().time > current_time) {
                     return transient_events.top().time;
                 }
                 simulateSingleEventEffect(t, transient_events.top());
@@ -145,7 +154,7 @@ class FaultInjector {
             }
         }
         while (!transient_events.empty()) {
-            if (transient_events.top().time > t.low) {
+            if (transient_events.top().time > current_time) {
                 return transient_events.top().time;
             }
             simulateSingleEventEffect(t, transient_events.top());
@@ -261,6 +270,14 @@ class FaultInjector {
         t.type = vpiSimTime;
         vpi_get_time(0, &t);
         return t;
+    }
+
+    static std::uint64_t timeValue(const s_vpi_time& time) {
+        return (static_cast<std::uint64_t>(time.high) << 32) | time.low;
+    }
+
+    static s_vpi_time toVpiTime(std::uint64_t time) {
+        return {vpiSimTime, static_cast<PLI_UINT32>(time >> 32), static_cast<PLI_UINT32>(time), 0};
     }
 
 #define STRINGIFY_CB_CASE(_cb) \

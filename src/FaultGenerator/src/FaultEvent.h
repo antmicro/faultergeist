@@ -17,10 +17,10 @@
 #pragma once
 
 #include "Signal.h"
+#include "UnitUtils.h"
 
 #include <cstdint>
 #include <ostream>
-#include <string>
 
 enum class FaultEventType : std::uint8_t {
     UNKNOWN = 0,
@@ -47,7 +47,7 @@ inline std::ostream& operator<<(std::ostream& os, FaultEventType type) {
 
 struct FaultEvent {
     Signal::Iterator it;
-    std::uint64_t time = 0;
+    unit::SIM_TIME time = 0 * unit::fs;
     std::string_view signal_path;
     std::uint32_t bit_index = 0;
     FaultEventType type = FaultEventType::UNKNOWN;
@@ -55,7 +55,7 @@ struct FaultEvent {
     bool operator<(const FaultEvent& other) const { return time < other.time; }
 
     friend std::ostream& operator<<(std::ostream& os, const FaultEvent& ev) {
-        os << "{ .time=" << ev.time;
+        os << "{ .time=" << std::format("{}", ev.time);
         os << ", .signal_path=" << ev.signal_path;
         os << ", .bit_index=" << ev.bit_index;
         os << ", .type=" << ev.type;

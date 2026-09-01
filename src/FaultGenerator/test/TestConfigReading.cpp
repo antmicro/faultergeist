@@ -14,10 +14,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "FaultStrategyBendel.h"
-#include "FaultStrategyRandom.h"
-#include "FaultStrategyWeibull.h"
+#include "FaultStrategy/Bendel.h"
+#include "FaultStrategy/Random.h"
+#include "FaultStrategy/Weibull.h"
 #include "GlobalOpts.h"
+#include "TestUtils.h"
+#include "UnitUtils.h"
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
@@ -31,7 +33,7 @@ using namespace nlohmann::literals;  // Required for the _json literal
 
 void from_json(const nlohmann::json&, GlobalOpts&);
 
-TEST(RandomStrategyTests, ExampleTest) {
+TEST(RandomStrategyTests, JsonConfig) {
     auto random_strategy_json =
         R"json({
   "model": {
@@ -41,19 +43,20 @@ TEST(RandomStrategyTests, ExampleTest) {
   "params": {
     "num_of_events": 101,
     "seed": 13,
-    "simulation_time": 102,
+    "simulation_time": "102ms",
     "sig_path_prefix": "top",
     "top_module": "dff_worker",
     "top_instance": "worker",
     "netlist_path": "worker.json",
     "fault_campaign_out": "random_file.csv",
+    "liberty_area_scale": "26cm2",
     "campaign_number": 26,
     "thread_number": 15
   }
 })json"_json;
 
-    GlobalOpts actual = random_strategy_json.get<GlobalOpts>();
-    auto random = std::dynamic_pointer_cast<RandomStrategy>(actual.strategy);
+    GlobalOpts actual;
+    ASSERT_NO_THROW({ actual = random_strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
     EXPECT_EQ(actual.top_module, "dff_worker");
@@ -61,64 +64,65 @@ TEST(RandomStrategyTests, ExampleTest) {
     EXPECT_EQ(actual.netlist_path, "worker.json");
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_EQ(actual.campaign_number, 26);
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 26 * unit::cm2);
 
+    auto random = std::dynamic_pointer_cast<RandomStrategy>(actual.strategy);
     ASSERT_TRUE(random);
     EXPECT_EQ(random->config.num_of_events, 101);
-    EXPECT_EQ(random->config.simulation_time, 102);
+    EXPECT_EQ(random->config.simulation_time, 102 * unit::ms);
     EXPECT_EQ(random->config.seed, 13);
     EXPECT_EQ(random->config.thread_number, 15u);
 }
 
-TEST(WeibullStrategyTests, ExampleTest) {
+TEST(WeibullStrategyTests, JsonConfig) {
     auto weibull_strategy_json =
         R"json({
   "model": {
     "name": "weibull",
     "params" : {
-      "cell_area": 0.25e-23,
-      "bit_count": 140000,
       "streams": [{
         "let": 111.0,
         "flux_phi": 123.0,
-        "max_time": 321.0
+        "max_time": "321ms"
       }]
     }
   },
   "params": {
     "num_of_events": 103,
     "seed": 56,
-    "simulation_time": 104,
+    "simulation_time": "104ps",
     "sig_path_prefix": "top",
     "top_module": "dff_worker",
     "top_instance": "worker",
     "netlist_path": "worker.json",
     "fault_campaign_out": "random_file.csv",
+    "liberty_area_scale": "17um2",
     "thread_number": 0
   }
 })json"_json;
 
-    GlobalOpts actual = weibull_strategy_json.get<GlobalOpts>();
+    GlobalOpts actual;
+    ASSERT_NO_THROW({ actual = weibull_strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
     EXPECT_EQ(actual.top_module, "dff_worker");
     EXPECT_EQ(actual.top_instance, "worker");
     EXPECT_EQ(actual.netlist_path, "worker.json");
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 17 * unit::um2);
 
-    auto weibull = std::dynamic_pointer_cast<WeibullStrategy>(actual.strategy);
-    ASSERT_TRUE(weibull);
-    EXPECT_EQ(weibull->config.num_of_events, 103);
-    EXPECT_EQ(weibull->config.seed, 56);
-    EXPECT_EQ(weibull->config.simulation_time, 104);
-    EXPECT_EQ(weibull->config.thread_number, 1);
+    auto strategy = std::dynamic_pointer_cast<WeibullStrategy>(actual.strategy);
+    ASSERT_TRUE(strategy);
+    EXPECT_EQ(strategy->config.num_of_events, 103);
+    EXPECT_EQ(strategy->config.seed, 56);
+    EXPECT_EQ(strategy->config.simulation_time, 104 * unit::ps);
+    EXPECT_EQ(strategy->config.thread_number, 1);
 
-    auto wconfig = weibull->weibull_config;
-    EXPECT_DOUBLE_EQ(wconfig.cell_area, 0.25e-23);
-    EXPECT_DOUBLE_EQ(wconfig.bit_count, 140000);
+    auto wconfig = strategy->weibull_config;
     ASSERT_EQ(wconfig.streams.size(), 1);
-    EXPECT_DOUBLE_EQ(wconfig.streams[0].let, 111.0);
-    EXPECT_DOUBLE_EQ(wconfig.streams[0].flux_phi, 123.0);
-    EXPECT_DOUBLE_EQ(wconfig.streams[0].max_time, 321.0);
+    EXPECT_QUANTITY_DOUBLE_EQ(wconfig.streams[0].let, 111.0 * unit::LET::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(wconfig.streams[0].flux_phi, 123.0 * unit::FLUX::unit);
+    EXPECT_EQ(wconfig.streams[0].max_time, 321 * unit::ms);
 }
 
 TEST(BendelStrategyTests, JsonConfig) {
@@ -127,54 +131,53 @@ TEST(BendelStrategyTests, JsonConfig) {
   "model": {
     "name": "bendel",
     "params" : {
-      "bit_count": 1,
-      "device_area": 6.0,
-      "num_cells": 3,
+      "A": 2.0,
+      "B": 3.0,
       "streams": [{
         "name": "stream0",
-        "A": 2.0,
-        "B": 3.0,
         "energy": 4.0,
         "flux_phi": 5.0,
-        "fluence": 6.0
+        "max_time": "6fs"
       }]
     }
   },
   "params": {
     "num_of_events": 103,
     "seed": 56,
-    "simulation_time": 104,
+    "simulation_time": "104fs",
     "sig_path_prefix": "top",
     "top_module": "dff_worker",
     "top_instance": "worker",
     "netlist_path": "worker.json",
-    "fault_campaign_out": "random_file.csv"
+    "fault_campaign_out": "random_file.csv",
+    "liberty_area_scale": "15nm2",
+    "thread_number": 0
+
   }
 })json"_json;
 
-    GlobalOpts actual = strategy_json.get<GlobalOpts>();
-    auto strategy = std::dynamic_pointer_cast<BendelStrategy>(actual.strategy);
-
-    EXPECT_TRUE(strategy);
-    EXPECT_EQ(strategy->config.num_of_events, 103);
-    EXPECT_EQ(strategy->config.seed, 56);
-    EXPECT_EQ(strategy->config.simulation_time, 104);
-
-    auto& config = strategy->bendel_config;
-    EXPECT_EQ(config.streams.size(), 1);
-    EXPECT_STREQ(config.streams[0].name.c_str(), "stream0");
-    EXPECT_DOUBLE_EQ(config.streams[0].A, 2.0);
-    EXPECT_DOUBLE_EQ(config.streams[0].B, 3.0);
-    EXPECT_DOUBLE_EQ(config.streams[0].energy, 4.0);
-    EXPECT_DOUBLE_EQ(config.streams[0].flux_phi, 5.0);
-    EXPECT_DOUBLE_EQ(config.streams[0].fluence, 6.0);
-    EXPECT_DOUBLE_EQ(config.bit_count, 1);
-    EXPECT_DOUBLE_EQ(config.num_cells, 3);
-    EXPECT_DOUBLE_EQ(config.device_area, 6.0);
+    GlobalOpts actual;
+    ASSERT_NO_THROW({ actual = strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
     EXPECT_EQ(actual.top_module, "dff_worker");
     EXPECT_EQ(actual.top_instance, "worker");
     EXPECT_EQ(actual.netlist_path, "worker.json");
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
+    EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 15 * unit::nm2);
+
+    auto strategy = std::dynamic_pointer_cast<BendelStrategy>(actual.strategy);
+    ASSERT_TRUE(strategy);
+    EXPECT_EQ(strategy->config.num_of_events, 103);
+    EXPECT_EQ(strategy->config.seed, 56);
+    EXPECT_EQ(strategy->config.simulation_time, 104 * unit::fs);
+
+    auto& config = strategy->bendel_config;
+    ASSERT_EQ(config.streams.size(), 1);
+    EXPECT_EQ(config.streams[0].name, "stream0");
+    EXPECT_QUANTITY_DOUBLE_EQ(config.A, 2.0 * unit::MeV);
+    EXPECT_QUANTITY_DOUBLE_EQ(config.B, 3.0 * unit::MeV);
+    EXPECT_QUANTITY_DOUBLE_EQ(config.streams[0].energy, 4.0 * unit::MeV);
+    EXPECT_QUANTITY_DOUBLE_EQ(config.streams[0].flux_phi, 5.0 * unit::FLUX::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(config.streams[0].max_time, 6.0 * unit::SIM_TIME::unit);
 }

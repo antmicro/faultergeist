@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "FaultStrategy.h"
+#include "FaultStrategy/FaultStrategy.h"
 
 #include <memory>
 #include <string>
@@ -30,6 +30,7 @@ struct GlobalOpts final {
     std::uint64_t campaign_number;
     std::shared_ptr<FaultStrategy> strategy;
     std::vector<std::string> liberty_paths;
+    unit::AREA liberty_area_scale;
 
     static GlobalOpts parseCmdArgs(int argc, char** argv);
 };

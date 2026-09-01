@@ -16,6 +16,7 @@
 
 #include "LibertyParser.h"
 #include "LogUtils.h"
+#include "UnitUtils.h"
 
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
@@ -28,7 +29,7 @@ int main(int argc, char** argv) {
 
     CHECK(!absl::GetFlag(FLAGS_input_path).empty()) << "Missing \"--input_path\" flag";
 
-    auto parse_result = LibertyParser::parse(absl::GetFlag(FLAGS_input_path));
+    auto parse_result = LibertyParser(1 * unit::um2).parse(absl::GetFlag(FLAGS_input_path));
     CHECK(parse_result) << "Failed to parse";
 
     std::cout << "library\n";

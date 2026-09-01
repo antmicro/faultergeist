@@ -1,4 +1,4 @@
-image: debian:trixie
+image: debian:forky
 
 stages:
   - prepare
@@ -14,7 +14,7 @@ stages:
     - apt-get update &> /dev/null
     - apt-get -y --no-install-recommends install
       autoconf bc bison build-essential ca-certificates ccache clang
-      cmake flex gdb git gtkwave help2man libfl2 libfl-dev libclang-rt-18-dev
+      cmake flex gdb git gtkwave help2man libfl2 libfl-dev libclang-rt-21-dev
       libgoogle-perftools-dev libsystemc libsystemc-dev perl wget python3-distro
       z3 zlib1g zlib1g-dev time libssl-dev libbz2-dev libreadline-dev libsqlite3-dev
       curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev
@@ -104,14 +104,14 @@ check-formatting:
   variables:
     SCALENODE_RAM: 8000 # the only way to force generation of slang headers is to build slang_slang, which fails on 4000 RAM
   before_script:
-    - apt-get update && apt-get install -y clang-format-19 clang-tidy-19 cmake build-essential
-    - cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - apt-get update && apt-get install -y clang clang-format clang-tidy libc++-dev libc++abi-dev cmake build-essential
+    - cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_FLAGS=-stdlib=libc++
     - cmake --build build --target slang_slang -j $(nproc)
   script:
     - echo "Checking formatting..."
-    - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format-19 --dry-run --Werror
+    - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format --dry-run --Werror
     - echo "Checking linting..."
-    - run-clang-tidy-19 -p build "^$(pwd)/src/.*(\.cpp|\.h)$" -header-filter="^$(pwd)/src/.*" -warnings-as-errors='*'
+    - run-clang-tidy -p build "^$(pwd)/src/.*(\.cpp|\.h)$" -header-filter="^$(pwd)/src/.*" -warnings-as-errors='*'
 
 run-example:
   <<: *build-setup

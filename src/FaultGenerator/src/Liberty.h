@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "UnitUtils.h"
+
 #include <optional>
 #include <ostream>
 #include <string>
@@ -28,13 +30,13 @@ struct FlipFlopInfo {
 };
 
 struct CellInfo {
-    std::optional<double> area;
+    std::optional<unit::AREA> area;
     std::optional<FlipFlopInfo> ff_info;
 
     friend std::ostream& operator<<(std::ostream& os, const CellInfo& cell) {
         os << "{ .area=";
         if (cell.area) {
-            os << cell.area.value();
+            os << std::format("{}", cell.area.value());
         } else {
             os << "nullopt";
         }
@@ -56,13 +58,13 @@ struct LibertyInfo {
 class Liberty {
     const std::vector<LibertyInfo> infos;
     std::unordered_set<std::string_view> ff_types;
-    std::unordered_map<std::string_view, double> cell_areas;
+    std::unordered_map<std::string_view, unit::AREA> cell_areas;
 
    public:
     Liberty() = default;
-    Liberty(const std::vector<std::string>&);
+    Liberty(unit::AREA area_scale, const std::vector<std::string>&);
     Liberty(const std::vector<LibertyInfo>&);
     bool isFF(std::string_view) const;
-    std::optional<double> getArea(std::string_view) const;
+    std::optional<unit::AREA> getArea(std::string_view) const;
     bool contains(const std::string& cell_type) const;
 };

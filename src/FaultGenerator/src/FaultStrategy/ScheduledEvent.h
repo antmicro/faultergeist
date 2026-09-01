@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "UnitUtils.h"
+
 #include <cstddef>
 
 struct ScheduledEvent {
-    double time = 0.0;
+    unit::TIME time = unit::TIME::zero();
     std::size_t signal_id = 0;
     std::size_t stream_id = 0;
 

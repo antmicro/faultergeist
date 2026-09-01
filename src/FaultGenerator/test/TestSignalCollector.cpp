@@ -22,6 +22,7 @@
 #include "SignalCollector/SignalCollector.h"
 #include "SignalCollector/SlangModuleCollector.h"
 #include "SignalCollector/YosysModuleCollector.h"
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
 #include <slang/syntax/SyntaxTree.h>
@@ -43,8 +44,8 @@ std::string_view normal_top_instance = "worker";
 std::string_view normal_sig_path_prefix = "top";
 Liberty normal_liberty = {{LibertyInfo{
     "test",
-    {{"$dff", {.area = 10.0, .ff_info = FlipFlopInfo{}}},
-     {"$_DFFE_PP_", {.area = 10.0, .ff_info = FlipFlopInfo{}}}},
+    {{"$dff", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}},
+     {"$_DFFE_PP_", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}}},
 }}};
 const PlacementInfo normal_placement{
     std::nullopt,
@@ -53,20 +54,20 @@ const PlacementInfo normal_placement{
             "counter$dff",
             "$dff",
             {
-                .width = 4,
-                .height = 3,
-                .x = 1,
-                .y = 2,
+                .width = 4 * unit::DIST::unit,
+                .height = 3 * unit::DIST::unit,
+                .x = 1 * unit::DIST::unit,
+                .y = 2 * unit::DIST::unit,
             }
         },
         CellPlacementInfo{
             "resp$dff",
             "$dff",
             {
-                .width = 5,
-                .height = 6,
-                .x = 8,
-                .y = 7,
+                .width = 5 * unit::DIST::unit,
+                .height = 6 * unit::DIST::unit,
+                .x = 8 * unit::DIST::unit,
+                .y = 7 * unit::DIST::unit,
             }
         },
     }
@@ -358,9 +359,10 @@ TEST_F(SlangModuleCollectorTests, EmptyLiberty) {
 const std::vector<Module> normal_modules = {
     {.name = "dff_worker",
      .child_modules = {},
-     .cells =
-         {{.name = "counter$dff", .type = "$dff", .hdlname = "", .width = 32},
-          {.name = "resp$dff", .type = "$dff", .hdlname = "", .width = 32}}}
+     .cells = {
+         {.name = "counter$dff", .type = "$dff", .hdlname = "", .width = 32},
+         {.name = "resp$dff", .type = "$dff", .hdlname = "", .width = 32}
+     }}
 };
 
 TEST(SignalCollectorTests, EmptyTopModule) {
@@ -431,25 +433,23 @@ TEST(SignalCollectorTests, NormalNetlistWithPlacement) {
     EXPECT_EQ(signals[0].cell.getPath(), "counter");
     EXPECT_EQ(signals[0].cell.width, 32);
     EXPECT_EQ(signals[0].type, SignalType::REGISTER);
-    ASSERT_TRUE(signals[0].area);
-    EXPECT_EQ(signals[0].area, 10.0);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[0].area, 10.0 * unit::AREA::unit);
     ASSERT_TRUE(signals[0].cell_placement);
-    EXPECT_EQ(signals[0].cell_placement->width, 4);
-    EXPECT_EQ(signals[0].cell_placement->height, 3);
-    EXPECT_EQ(signals[0].cell_placement->x, 1);
-    EXPECT_EQ(signals[0].cell_placement->y, 2);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[0].cell_placement->width, 4 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[0].cell_placement->height, 3 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[0].cell_placement->x, 1 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[0].cell_placement->y, 2 * unit::DIST::unit);
 
     EXPECT_EQ(signals[1].path_prefix, "top.worker");
     EXPECT_EQ(signals[1].cell.getPath(), "resp");
     EXPECT_EQ(signals[1].cell.width, 32);
     EXPECT_EQ(signals[1].type, SignalType::REGISTER);
-    ASSERT_TRUE(signals[1].area);
-    EXPECT_EQ(signals[1].area, 10.0);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[1].area, 10.0 * unit::AREA::unit);
     ASSERT_TRUE(signals[1].cell_placement);
-    EXPECT_EQ(signals[1].cell_placement->width, 5);
-    EXPECT_EQ(signals[1].cell_placement->height, 6);
-    EXPECT_EQ(signals[1].cell_placement->x, 8);
-    EXPECT_EQ(signals[1].cell_placement->y, 7);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->width, 5 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->height, 6 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->x, 8 * unit::DIST::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->y, 7 * unit::DIST::unit);
 }
 
 auto json_with_hdlname = R"json({
@@ -490,7 +490,7 @@ const std::string_view json_with_hdlname_top_instance = "worker";
 const std::string_view json_with_hdlname_sig_path_prefix = "top";
 const Liberty json_with_hdlname_liberty = {{LibertyInfo{
     "test",
-    {{"$_DFFE_PP_", {.area = 10.0, .ff_info = FlipFlopInfo{}}}},
+    {{"$_DFFE_PP_", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}}},
 }}};
 const PlacementInfo json_with_hdlname_placement{
     std::nullopt,
@@ -499,20 +499,20 @@ const PlacementInfo json_with_hdlname_placement{
             "dff_worker0.counter[0]$_DFFE_PP_",
             "$_DFFE_PP_",
             {
-                .width = 4,
-                .height = 3,
-                .x = 1,
-                .y = 2,
+                .width = 4 * unit::DIST::unit,
+                .height = 3 * unit::DIST::unit,
+                .x = 1 * unit::DIST::unit,
+                .y = 2 * unit::DIST::unit,
             }
         },
         CellPlacementInfo{
             "dff_worker0.resp[0]$_DFFE_PP_",
             "$_DFFE_PP_",
             {
-                .width = 5,
-                .height = 6,
-                .x = 8,
-                .y = 7,
+                .width = 5 * unit::DIST::unit,
+                .height = 6 * unit::DIST::unit,
+                .x = 8 * unit::DIST::unit,
+                .y = 7 * unit::DIST::unit,
             }
         },
     }
@@ -566,23 +566,23 @@ TEST(SignalCollectorMiscTests, SlangMatchesYosysIgnoringAreaAndWidth) {
     const Liberty liberty = {{LibertyInfo{
         "test",
         {
-            {"AND2x2_ASAP7_75t_R", {.area = 1.0}},
-            {"AOI31xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"DFFHQNx1_ASAP7_75t_R", {.area = 1.0, .ff_info = FlipFlopInfo{}}},
-            {"INVx1_ASAP7_75t_R", {.area = 1.0}},
-            {"NAND2xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"NAND3xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"NAND5xp2_ASAP7_75t_R", {.area = 1.0}},
-            {"NOR2xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"NOR3xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"NOR4xp25_ASAP7_75t_R", {.area = 1.0}},
-            {"NOR5xp2_ASAP7_75t_R", {.area = 1.0}},
-            {"OA21x2_ASAP7_75t_R", {.area = 1.0}},
-            {"OAI31xp33_ASAP7_75t_R", {.area = 1.0}},
-            {"OR2x2_ASAP7_75t_R", {.area = 1.0}},
-            {"OR3x1_ASAP7_75t_R", {.area = 1.0}},
-            {"OR5x1_ASAP7_75t_R", {.area = 1.0}},
-            {"XNOR2xp5_ASAP7_75t_R", {.area = 1.0}},
+            {"AND2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"AOI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"DFFHQNx1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}},
+            {"INVx1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NAND2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NAND3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NAND5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NOR2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NOR3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NOR4xp25_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"NOR5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"OA21x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"OAI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"OR2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"OR3x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"OR5x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"XNOR2xp5_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
         },
     }}};
 
@@ -621,10 +621,10 @@ TEST(SignalCollectorMiscTests, SlangMatchesYosysIgnoringAreaAndWidth) {
         EXPECT_EQ(sig1.type, sig2.type);
         ASSERT_EQ(sig1.cell_placement.has_value(), sig2.cell_placement.has_value());
         if (sig1.cell_placement) {
-            EXPECT_DOUBLE_EQ(sig1.cell_placement->width, sig2.cell_placement->width);
-            EXPECT_DOUBLE_EQ(sig1.cell_placement->height, sig2.cell_placement->height);
-            EXPECT_DOUBLE_EQ(sig1.cell_placement->x, sig2.cell_placement->x);
-            EXPECT_DOUBLE_EQ(sig1.cell_placement->y, sig2.cell_placement->y);
+            EXPECT_QUANTITY_DOUBLE_EQ(sig1.cell_placement->width, sig2.cell_placement->width);
+            EXPECT_QUANTITY_DOUBLE_EQ(sig1.cell_placement->height, sig2.cell_placement->height);
+            EXPECT_QUANTITY_DOUBLE_EQ(sig1.cell_placement->x, sig2.cell_placement->x);
+            EXPECT_QUANTITY_DOUBLE_EQ(sig1.cell_placement->y, sig2.cell_placement->y);
         }
 
         ++yosys_it;
@@ -661,7 +661,7 @@ TEST(SignalCollectorMiscTests, NetlistWithLibertyCellIncluded) {
     const std::string_view sig_path_prefix = "top";
     const Liberty liberty = {{LibertyInfo{
         "test",
-        {{"my_cell", {.area = 10.0, .ff_info = FlipFlopInfo{}}}},
+        {{"my_cell", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}}},
     }}};
     auto modules = YosysModuleCollector(liberty).collect(json);
     const auto& signals = SignalCollector(top_module, top_instance, sig_path_prefix, liberty, {})

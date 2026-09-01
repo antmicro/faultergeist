@@ -19,6 +19,7 @@
 #include "PlacementInfo.h"
 
 #include "LogUtils.h"
+#include "UnitUtils.h"
 
 #include <fstream>
 #include <string>
@@ -57,8 +58,16 @@ std::optional<CellPlacementInfo> parsePlacement(const std::string& line) {
         return std::nullopt;
     }
 
+    const auto cell_placement_scale = 1 * unit::um;
     return CellPlacementInfo{
-        .name = name, .type = type, .placement = {.width = width, .height = height, .x = x, .y = y}
+        .name = name,
+        .type = type,
+        .placement = {
+            .width = width * cell_placement_scale,
+            .height = height * cell_placement_scale,
+            .x = x * cell_placement_scale,
+            .y = y * cell_placement_scale
+        }
     };
 }
 

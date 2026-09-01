@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include "Constants.h"
 #include "FaultStrategy.h"
+#include "UnitUtils.h"
 
-#include <random>
 #include <span>
 #include <vector>
 
@@ -27,18 +26,29 @@ struct Signal;
 
 struct WeibullConfig {
     struct Stream {
-        double let;       // [Mev * cm^2 / mg]
-        double flux_phi;  // [s^-1 * cm^-2]
-        double max_time;  // [s]
+        unit::LET let;
+        unit::FLUX flux_phi;
+        unit::SIM_TIME max_time;
+
+        bool isValid(unit::LET let_threshold);
+        friend std::ostream& operator<<(std::ostream& os, const Stream& s) {
+            os << "{ ";
+            std::print(os, "let={}, flux_phi={}, max_time={}", s.let, s.flux_phi, s.max_time);
+            return os << " }";
+        }
     };
     std::vector<Stream> streams;
-    std::uint32_t bit_count = 256000 * 16;  // 4MB
-    double cell_area = 0.25e-6;             // [mm^2]
 
-    double let_threshold = 1.09 * 1e5;             // [Mev * cm^2 / mg]
-    double width = 39.25 * 1e5;                    // [Mev * cm^2 / mg]
-    double shape_parameter = 1.116;                //
-    double limiting_cross_section = 0.284 * 1e-4;  // [s * cm ^ 2 / bit]
+    unit::LET let_threshold = 1.09 * unit::MeV * unit::cm2 / unit::mg;
+    unit::LET width = 39.25 * unit::MeV * unit::cm2 / unit::mg;
+    unit::ONE shape_parameter = 1.116;
+
+    unit::LCS limiting_cross_section =
+        0.28450751 * unit::cm2 /* cm²/device */ / std::pow(2, 22) /* bit width */;
+
+    // Reference cell area adjusting other parameters, compared to source experimental
+    // data.
+    unit::AREA reference_cell_area = 0.25 * 1e-6 * unit::cm2;
 };
 
 class WeibullStrategy : public FaultStrategy {
@@ -51,6 +61,10 @@ class WeibullStrategy : public FaultStrategy {
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:
-    double
-    eventTime(const Signal&, const WeibullConfig::Stream&, double g0, FaultStrategy::RandomGen&);
+    unit::TIME eventTime(
+        const Signal&,
+        const WeibullConfig::Stream&,
+        unit::LCS sigma0,
+        FaultStrategy::RandomGen&
+    );
 };

@@ -23,7 +23,10 @@
 #include <vector>
 
 class LibertyParser final {
+    unit::AREA area_scale;
+
    public:
-    static std::optional<LibertyInfo> parse(const std::string&);
-    static std::vector<LibertyInfo> parseFiles(const std::vector<std::string>&);
+    LibertyParser(unit::AREA area_scale) : area_scale(area_scale) {}
+    std::optional<LibertyInfo> parse(const std::string&);
+    std::vector<LibertyInfo> parseFiles(const std::vector<std::string>&);
 };

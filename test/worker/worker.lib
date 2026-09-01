@@ -1,6 +1,6 @@
 library(worker) {
   cell ("$_SDFF_PN0_") {
-    area : 0.6118e-6;
+    area : 6.118;
 
     ff (IQ, IQN) {
       next_state : D;
@@ -9,7 +9,7 @@ library(worker) {
   }
 
   cell ("$sdff") {
-    area : 0.6118e-6;
+    area : 6.118;
 
     ff (IQ, IQN) {
       next_state : D;
@@ -18,7 +18,7 @@ library(worker) {
   }
 
   cell ("$_DFFE_PP_") {
-    area : 0.5360e-6;
+    area : 5.36;
 
     ff (IQ, IQN) {
       next_state : D;
@@ -27,7 +27,7 @@ library(worker) {
   }
 
   cell ("$dffe") {
-    area : 0.5360e-6;
+    area : 5.36;
 
     ff (IQ, IQN) {
       next_state : D;
@@ -36,7 +36,7 @@ library(worker) {
   }
 
   cell ("$dff") {
-    area : 0.5e-6;
+    area : 5;
 
     ff (IQ, IQN) {
       next_state : D;

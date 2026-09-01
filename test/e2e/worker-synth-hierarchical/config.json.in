@@ -6,12 +6,13 @@
   "params": {
     "seed": 42,
     "num_of_events": 10,
-    "simulation_time": 10,
+    "simulation_time": "20ps",
     "sig_path_prefix": "top",
     "top_module": "worker",
     "top_instance": "worker",
     "netlist_path": "@JSON_NETLIST@",
     "fault_campaign_out": "@FAULT_CAMPAIGN_OUT@",
+    "liberty_area_scale": "1um2",
     "liberty_paths": [ @LIB_FILES@ ]
   }
 }

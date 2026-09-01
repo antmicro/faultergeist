@@ -15,8 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "FaultEvent.h"
-#include "FaultStrategy.h"
-#include "FaultStrategyWeibull.h"
+#include "FaultStrategy/Weibull.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>
@@ -26,51 +25,140 @@
 #include <string>
 #include <vector>
 
+namespace {
+
+static const unit::AREA DEFAULT_CELL_AREA = 0.25 * 1e-6 * unit::cm2;  // [cm^2]
+
+}  // anonymous namespace
+
 TEST(WeibullGenerationTest, CountsWithinTolerance) {
     // From seu2.py
-    constexpr std::uint64_t expected_counts[] = {2431964, 245205, 103683, 101457, 20256,
-                                                 99086,   102352, 104023, 97811,  2741,
-                                                 91813,   98614,  52001,  90941,  9825,
-                                                 9659,    25,     26,     160635, 10396};
-    constexpr std::size_t num_streams = sizeof(expected_counts) / sizeof(expected_counts[0]);
-    constexpr std::uint64_t expected_total = 3832513;
+    constexpr std::array expected_counts = {2431964, 245205, 103683, 101457, 20256,  99086, 102352,
+                                            104023,  97811,  2741,   91813,  98614,  52001, 90941,
+                                            9825,    9659,   25,     26,     160635, 10396};
+    constexpr std::uint64_t expected_total =
+        std::accumulate(expected_counts.begin(), expected_counts.end(), 0);
+
     constexpr std::size_t samples = 10;
 
-    std::vector<Signal> signals = createSignals(100);
+    std::vector<Signal> signals =
+        createSignals(4 * 1024, DEFAULT_CELL_AREA, 1024);  // total 4Mbit as in the experiment
 
     FaultStrategy::Config config{
-        .num_of_events = 9999999,
+        .num_of_events = 0,
         .seed = 42,
-        .simulation_time = 9999999,
+        .simulation_time = 9999999 * unit::s,
         .thread_number = 1,
     };
 
     std::vector<WeibullConfig::Stream> streams = {
-        WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 9.15e3 * 1e4, .max_time = 1094},
-        WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 996},
-        WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.04e3 * 1e4, .max_time = 409},
-        WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.05e3 * 1e4, .max_time = 399},
-        WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 5.04e2 * 1e4, .max_time = 166},
-        WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 536},
-        WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 551},
-        WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.58e3 * 1e4, .max_time = 417},
-        WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.51e3 * 1e4, .max_time = 411},
-        WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.45e3 * 1e4, .max_time = 12},
-        WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.00e3 * 1e4, .max_time = 433},
-        WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.05e3 * 1e4, .max_time = 452},
-        WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.32e3 * 1e4, .max_time = 433},
-        WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.77e3 * 1e4, .max_time = 636},
-        WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.03e3 * 1e4, .max_time = 201},
-        WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.11e3 * 1e4, .max_time = 197},
-        WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 7.60e3 * 1e4, .max_time = 133},
-        WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 8.17e3 * 1e4, .max_time = 124},
-        WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 9.99e3 * 1e4, .max_time = 102},
-        WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 5.17e1 * 1e4, .max_time = 1275}
+        WeibullConfig::Stream{
+            .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 9.15e3 * inverse(unit::s * unit::cm2),
+            .max_time = 1094 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+            .max_time = 996 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.04e3 * inverse(unit::s * unit::cm2),
+            .max_time = 409 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.05e3 * inverse(unit::s * unit::cm2),
+            .max_time = 399 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 5.04e2 * inverse(unit::s * unit::cm2),
+            .max_time = 166 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+            .max_time = 536 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+            .max_time = 551 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.58e3 * inverse(unit::s * unit::cm2),
+            .max_time = 417 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.51e3 * inverse(unit::s * unit::cm2),
+            .max_time = 411 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 1.45e3 * inverse(unit::s * unit::cm2),
+            .max_time = 12 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 2.00e3 * inverse(unit::s * unit::cm2),
+            .max_time = 433 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 2.05e3 * inverse(unit::s * unit::cm2),
+            .max_time = 452 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 2.32e3 * inverse(unit::s * unit::cm2),
+            .max_time = 433 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 2.77e3 * inverse(unit::s * unit::cm2),
+            .max_time = 636 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 5.03e3 * inverse(unit::s * unit::cm2),
+            .max_time = 201 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 5.11e3 * inverse(unit::s * unit::cm2),
+            .max_time = 197 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 7.60e3 * inverse(unit::s * unit::cm2),
+            .max_time = 133 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 8.17e3 * inverse(unit::s * unit::cm2),
+            .max_time = 124 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 9.99e3 * inverse(unit::s * unit::cm2),
+            .max_time = 102 * unit::s
+        },
+        WeibullConfig::Stream{
+            .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+            .flux_phi = 5.17e1 * inverse(unit::s * unit::cm2),
+            .max_time = 1275 * unit::s
+        }
     };
 
     std::vector<FaultEvent> all_events;
 
-    for (std::size_t i = 0; i < num_streams; ++i) {
+    // GTEST_SKIP() << "This will require fine tuning";
+
+    for (std::size_t i = 0; i < expected_counts.size(); ++i) {
         WeibullStrategy strategy{config, WeibullConfig{{streams[i]}}};
         std::vector<FaultEvent> stream_events = strategy.generate(signals);
         std::uint64_t count = stream_events.size();
@@ -88,11 +176,12 @@ TEST(WeibullGenerationTest, CountsWithinTolerance) {
             tolerance = 5.0;
         }
 
-        double diff =
-            std::abs(static_cast<double>(count) - static_cast<double>(expected)) / expected;
-
-        EXPECT_LE(diff, tolerance) << "stream #" << i << ": got " << count << ", expected "
-                                   << expected << " (" << diff * 100.0 << "% diff)";
+        double diff = (static_cast<double>(count) - static_cast<double>(expected)) / expected;
+        double abs_diff = std::abs(diff);
+        std::cerr << "\nstream #" << i << ": got " << count << ", expected " << expected << " ("
+                  << diff * 100.0 << "% diff)\n";
+        EXPECT_LE(abs_diff, tolerance) << "stream #" << i << ": got " << count << ", expected "
+                                       << expected << " (" << abs_diff * 100.0 << "% diff)";
     }
 
     double total_diff =
@@ -103,37 +192,118 @@ TEST(WeibullGenerationTest, CountsWithinTolerance) {
 }
 
 TEST(WeibullGenerationTest, WhenInParallelResultIsSorted) {
-    std::vector<Signal> signals = createSignals(100);
+    std::vector<Signal> signals = createSignals(10, 10 * unit::um2, 10);
 
     FaultStrategy::Config config{
-        .num_of_events = 9999999,
+        .num_of_events = 0,
         .seed = 42,
-        .simulation_time = 9999999,
+        .simulation_time = 9999999 * unit::s,
         .thread_number = 4u,
     };
 
     WeibullConfig weibull_config = {
-        .streams =
-            {WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 9.15e3 * 1e4, .max_time = 1094},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 996},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.04e3 * 1e4, .max_time = 409},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 1.05e3 * 1e4, .max_time = 399},
-             WeibullConfig::Stream{.let = 67.7 * 1e5, .flux_phi = 5.04e2 * 1e4, .max_time = 166},
-             WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 536},
-             WeibullConfig::Stream{.let = 40.4 * 1e5, .flux_phi = 1.01e3 * 1e4, .max_time = 551},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.58e3 * 1e4, .max_time = 417},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.51e3 * 1e4, .max_time = 411},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 1.45e3 * 1e4, .max_time = 12},
-             WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.00e3 * 1e4, .max_time = 433},
-             WeibullConfig::Stream{.let = 20.4 * 1e5, .flux_phi = 2.05e3 * 1e4, .max_time = 452},
-             WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.32e3 * 1e4, .max_time = 433},
-             WeibullConfig::Stream{.let = 10.2 * 1e5, .flux_phi = 2.77e3 * 1e4, .max_time = 636},
-             WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.03e3 * 1e4, .max_time = 201},
-             WeibullConfig::Stream{.let = 3.0 * 1e5, .flux_phi = 5.11e3 * 1e4, .max_time = 197},
-             WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 7.60e3 * 1e4, .max_time = 133},
-             WeibullConfig::Stream{.let = 1.1 * 1e5, .flux_phi = 8.17e3 * 1e4, .max_time = 124},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 9.99e3 * 1e4, .max_time = 102},
-             WeibullConfig::Stream{.let = 32.6 * 1e5, .flux_phi = 5.17e1 * 1e4, .max_time = 1275}}
+        .streams = {
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 9.15e3 * inverse(unit::s * unit::cm2),
+                .max_time = 1094 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 996 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.04e3 * inverse(unit::s * unit::cm2),
+                .max_time = 409 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.05e3 * inverse(unit::s * unit::cm2),
+                .max_time = 399 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 67.7 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.04e2 * inverse(unit::s * unit::cm2),
+                .max_time = 166 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 536 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 40.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.01e3 * inverse(unit::s * unit::cm2),
+                .max_time = 551 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.58e3 * inverse(unit::s * unit::cm2),
+                .max_time = 417 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.51e3 * inverse(unit::s * unit::cm2),
+                .max_time = 411 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 1.45e3 * inverse(unit::s * unit::cm2),
+                .max_time = 12 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.00e3 * inverse(unit::s * unit::cm2),
+                .max_time = 433 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 20.4 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.05e3 * inverse(unit::s * unit::cm2),
+                .max_time = 452 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.32e3 * inverse(unit::s * unit::cm2),
+                .max_time = 433 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 10.2 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 2.77e3 * inverse(unit::s * unit::cm2),
+                .max_time = 636 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.03e3 * inverse(unit::s * unit::cm2),
+                .max_time = 201 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 3.0 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.11e3 * inverse(unit::s * unit::cm2),
+                .max_time = 197 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 7.60e3 * inverse(unit::s * unit::cm2),
+                .max_time = 133 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 1.1 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 8.17e3 * inverse(unit::s * unit::cm2),
+                .max_time = 124 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 9.99e3 * inverse(unit::s * unit::cm2),
+                .max_time = 102 * unit::s
+            },
+            WeibullConfig::Stream{
+                .let = 32.6 * unit::MeV * unit::cm2 / unit::mg,
+                .flux_phi = 5.17e1 * inverse(unit::s * unit::cm2),
+                .max_time = 1275 * unit::s
+            }
+        }
     };
 
     WeibullStrategy strategy{config, weibull_config};
