@@ -84,6 +84,12 @@ ABSL_FLAG(
     "Available units are: m2, cm2, mm2, um2, nm2."
 );
 const unit::AREA default_liberty_area_scale = 1 * unit::um2;
+ABSL_FLAG(
+    std::string,
+    cell_area_json_path,
+    "",
+    "Alternative way to provide information available via liberty."
+);
 
 namespace {
 
@@ -96,7 +102,7 @@ unit::SIM_TIME parse_simulation_time(std::string_view sim_time_str) {
         return simulation_time_default;
     }
 
-    auto parsed = unit::parseTime(sim_time_str);
+    auto parsed = unit::parseQuantity(sim_time_str);
     if (!parsed) {
         LOG(WARNING) << "Failed to parse simulation time. Using default value: "
                      << std::format("{}", simulation_time_default);
@@ -112,31 +118,12 @@ unit::SIM_TIME parse_simulation_time(std::string_view sim_time_str) {
     return simulation_time_default;
 }
 
-static std::optional<unit::AREA> normalizeArea(double value, std::string_view unit) {
-    if (unit == "m2") {
-        return value * unit::m2;
-    }
-    if (unit == "cm2") {
-        return value * unit::cm2;
-    }
-    if (unit == "mm2") {
-        return value * unit::mm2;
-    }
-    if (unit == "um2") {
-        return value * unit::um2;
-    }
-    if (unit == "nm2") {
-        return value * unit::nm2;
-    }
-    return std::nullopt;
-}
-
 unit::AREA getLibertyAreaScale(std::string_view area_scale_str) {
     if (area_scale_str.empty()) {
         return default_liberty_area_scale;
     }
 
-    auto parsed = unit::parseTime(area_scale_str);
+    auto parsed = unit::parseQuantity(area_scale_str);
     if (!parsed) {
         LOG(WARNING) << "Failed to parse liberty area scale. Using default value: "
                      << std::format("{}", default_liberty_area_scale);
@@ -144,7 +131,7 @@ unit::AREA getLibertyAreaScale(std::string_view area_scale_str) {
     }
 
     auto [value, unit] = *parsed;
-    if (auto result = normalizeArea(value, unit)) {
+    if (auto result = unit::normalizeArea(value, unit)) {
         return *result;
     }
     LOG(WARNING) << "Unrecognized liberty area scale unit: '" << unit
@@ -197,11 +184,18 @@ void from_json(const nlohmann::json& json, GlobalOpts& opts) {
     const auto& params = json["params"];
 
 #define GET_OR_DEFAULT(name) \
-    opts.name = params.value(#name, absl::GetFlagReflectionHandle(FLAGS_##name).DefaultValue())
+    do { \
+        const bool from_config = params.contains(#name); \
+        opts.name = \
+            params.value(#name, absl::GetFlagReflectionHandle(FLAGS_##name).DefaultValue()); \
+        VLOG(2) << "GlobalOpts." #name " = '" << opts.name << "' (" \
+                << (from_config ? "config" : "default") << ")"; \
+    } while (false)
     GET_OR_DEFAULT(sig_path_prefix);
     GET_OR_DEFAULT(top_module);
     GET_OR_DEFAULT(top_instance);
     GET_OR_DEFAULT(netlist_path);
+    GET_OR_DEFAULT(cell_area_json_path);
 #undef GET_OR_DEFAULT
     opts.campaign_number = params.value(
         "campaign_number",
@@ -279,6 +273,7 @@ GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
             .strategy = FaultStrategyFactory::defaultStrategy(config),
             .liberty_paths = absl::GetFlag(FLAGS_liberty_paths),
             .liberty_area_scale = liberty_area_scale,
+            .cell_area_json_path = absl::GetFlag(FLAGS_cell_area_json_path),
         };
     } else {
         try {

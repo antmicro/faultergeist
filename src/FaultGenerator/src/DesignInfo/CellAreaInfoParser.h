@@ -14,24 +14,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "PlacementInfo.h"
+#pragma once
 
-#include "OpenROADParser.h"
+#include <nlohmann/json.hpp>
 
-PlacementInfo::PlacementInfo(
-    std::optional<Placement> device_info,
-    std::vector<CellPlacementInfo> cell_info
-)
-    : device_info(std::move(device_info)), cell_info(std::move(cell_info)) {}
+#include <filesystem>
 
-PlacementInfo::PlacementInfo(const std::string& filepath)
-    : PlacementInfo(OpenROADParser::parse(filepath)) {}
+struct LibertyInfo;
 
-std::optional<Placement> PlacementInfo::getCellPlacement(const std::string& cell_name) const {
-    for (const auto& info : cell_info) {
-        if (info.name == cell_name) {
-            return info.placement;
-        }
-    }
-    return std::nullopt;
-}
+class CellAreaJsonParser {
+   public:
+    static LibertyInfo parse(std::filesystem::path);
+    static LibertyInfo parse(std::string_view name, const nlohmann::json&);
+};

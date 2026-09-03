@@ -37,7 +37,7 @@ void readQuantity(const nlohmann::json& json, const char* name, Quantity& quanti
 
 template <typename Quantity>
 void readMaxTime(const nlohmann::json& json, Quantity& quantity) {
-    auto parsed = unit::parseTime(json["max_time"].get<std::string_view>());
+    auto parsed = unit::parseQuantity(json["max_time"].get<std::string_view>());
     if (parsed) {
         auto [value, unit] = *parsed;
         if (auto result = unit::normalizeSimTime(value, unit)) {

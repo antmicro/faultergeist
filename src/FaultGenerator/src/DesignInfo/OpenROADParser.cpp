@@ -16,7 +16,7 @@
 
 #include "OpenROADParser.h"
 
-#include "PlacementInfo.h"
+#include "Placement.h"
 
 #include "LogUtils.h"
 #include "UnitUtils.h"

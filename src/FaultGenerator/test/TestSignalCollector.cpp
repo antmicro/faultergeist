@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "Liberty.h"
-#include "PlacementInfo.h"
+#include "DesignInfo/Liberty.h"
+#include "DesignInfo/Placement.h"
 #include "Signal.h"
 #include "SignalCollector/IsFlipFlopPredicate.h"
 #include "SignalCollector/Module.h"

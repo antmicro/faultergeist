@@ -17,7 +17,7 @@
 #include "IsFlipFlopPredicate.h"
 
 #include "Cell.h"
-#include "Liberty.h"
+#include "DesignInfo/Liberty.h"
 #include "LogUtils.h"
 
 #include <algorithm>

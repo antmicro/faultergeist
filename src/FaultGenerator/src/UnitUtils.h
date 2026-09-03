@@ -93,7 +93,9 @@ SIM_TIME toSimTime(quantity<Unit, double> value) {
 }
 
 [[maybe_unused]]
-static std::optional<std::tuple<double, std::string_view>> parseTime(std::string_view time_str) {
+static std::optional<std::tuple<double, std::string_view>> parseQuantity(
+    std::string_view time_str
+) {
     double simulation_time;
     const auto [ptr, ec] =
         std::from_chars(time_str.data(), time_str.data() + time_str.size(), simulation_time);
@@ -124,6 +126,26 @@ static std::optional<SIM_TIME> normalizeSimTime(double value, std::string_view u
     }
     if (unit == "fs") {
         return toSimTime(value * fs);
+    }
+    return std::nullopt;
+}
+
+[[maybe_unused]]
+static std::optional<unit::AREA> normalizeArea(double value, std::string_view unit) {
+    if (unit == "m2") {
+        return value * unit::m2;
+    }
+    if (unit == "cm2") {
+        return value * unit::cm2;
+    }
+    if (unit == "mm2") {
+        return value * unit::mm2;
+    }
+    if (unit == "um2") {
+        return value * unit::um2;
+    }
+    if (unit == "nm2") {
+        return value * unit::nm2;
     }
     return std::nullopt;
 }

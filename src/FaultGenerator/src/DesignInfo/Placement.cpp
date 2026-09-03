@@ -14,24 +14,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#pragma once
+#include "Placement.h"
 
-#include "FaultStrategy/FaultStrategy.h"
+#include "OpenROADParser.h"
 
-#include <memory>
-#include <string>
+PlacementInfo::PlacementInfo(
+    std::optional<Placement> device_info,
+    std::vector<CellPlacementInfo> cell_info
+)
+    : device_info(std::move(device_info)), cell_info(std::move(cell_info)) {}
 
-struct GlobalOpts final {
-    std::string sig_path_prefix;
-    std::string top_module;
-    std::string top_instance;
-    std::string netlist_path;
-    std::string fault_campaign_out;
-    std::uint64_t campaign_number;
-    std::shared_ptr<FaultStrategy> strategy;
-    std::vector<std::string> liberty_paths;
-    unit::AREA liberty_area_scale;
-    std::string cell_area_json_path;
+PlacementInfo::PlacementInfo(const std::string& filepath)
+    : PlacementInfo(OpenROADParser::parse(filepath)) {}
 
-    static GlobalOpts parseCmdArgs(int argc, char** argv);
-};
+std::optional<Placement> PlacementInfo::getCellPlacement(const std::string& cell_name) const {
+    for (const auto& info : cell_info) {
+        if (info.name == cell_name) {
+            return info.placement;
+        }
+    }
+    return std::nullopt;
+}

@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "LibertyParser.h"
+#include "DesignInfo/LibertyParser.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>

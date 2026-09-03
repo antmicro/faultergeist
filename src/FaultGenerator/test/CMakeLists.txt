@@ -42,12 +42,22 @@ add_executable(TestFaultStrategyBendel TestFaultStrategyBendel.cpp)
 target_link_libraries(TestFaultStrategyBendel PRIVATE FaultGeneratorTestMain)
 add_test(NAME unit.generation.faultStrategy.bendel COMMAND TestFaultStrategyBendel)
 
+#==============================================================================
+#==============================================================================
+#==============================================================================
 add_executable(TestLibertyParsing TestLibertyParsing.cpp)
 target_link_libraries(TestLibertyParsing PRIVATE FaultGeneratorTestMain)
 target_compile_definitions(TestLibertyParsing PRIVATE
   TEST_DATA_DIR="${TEST_DATA_DIR}"
 )
 add_test(NAME unit.generation.gtest.libertyParsing COMMAND TestLibertyParsing)
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
+add_executable(TestCellAreaInfoParser TestCellAreaInfoParser.cpp)
+target_link_libraries(TestCellAreaInfoParser PRIVATE FaultGeneratorTestMain)
+add_test(NAME unit.generation.gtest.cellAreaInfoParser COMMAND TestCellAreaInfoParser)
 
 #==============================================================================
 #==============================================================================

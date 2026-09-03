@@ -1,0 +1,18 @@
+{
+  "model": {
+    "name": "random",
+    "params": {}
+  },
+  "params": {
+    "seed": 42,
+    "num_of_events": 20,
+    "simulation_time": "10ps",
+    "sig_path_prefix": "top",
+    "top_module": "@DESIGN_TOP@",
+    "top_instance": "worker.dff_worker0",
+    "netlist_path": "@NETLIST_PATH@",
+    "fault_campaign_out": "@FAULT_CAMPAIGN_OUT@",
+    "thread_number": @FI_E2E_JOBS@,
+    "cell_area_json_path": "@CMAKE_CURRENT_SOURCE_DIR@/extra_config.json.in"
+  }
+}

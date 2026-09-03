@@ -482,7 +482,7 @@ endfunction()
 # On rerun, the helper removes OUTPUT and FAULT_CAMPAIGN_OUT, recreates the
 # required directories, invokes the tool, then touches OUTPUT.
 function(fi_add_fault_campaign NAME)
-  set(options ALLOW_EMPTY)
+  set(options ALLOW_EMPTY EXTRA_DEBUG)
   set(one_value_args OUTPUT CONFIG_FILE WORK_DIR SIMULATION_DIR)
   set(multi_value_args ARGS DEPENDS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -508,6 +508,9 @@ function(fi_add_fault_campaign NAME)
   set(_log_file "${FI_OUTPUT}_gen.log")
   if(FI_CONFIG)
     list(APPEND _command "--config_file" "${FI_CONFIG}")
+  endif()
+  if(FI_EXTRA_DEBUG)
+    list(APPEND _command --v=3 --stderrthreshold=0)
   endif()
 
   get_filename_component(_output_dir "${FI_OUTPUT}" DIRECTORY)

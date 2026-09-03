@@ -10,6 +10,7 @@ set(VERILOG_NETLIST "${WORK_DIR}/${DESIGN_TOP}_post_synth.v")
 fi_add_yosys_json(fi_e2e_worker_basic_netlist)
 
 add_subdirectory(baseline)
-add_subdirectory(random)
 add_subdirectory(bendel)
+add_subdirectory(extra-config)
+add_subdirectory(random)
 add_subdirectory(weibull)

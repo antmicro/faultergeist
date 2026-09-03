@@ -14,14 +14,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "DesignInfo/CellAreaInfoParser.h"
+#include "DesignInfo/Liberty.h"
+#include "DesignInfo/Placement.h"
 #include "FaultCampaignWriter.h"
 #include "FaultEvent.h"
 #include "FaultEventsSignalFormatter.h"
 #include "FaultStrategy/FaultStrategy.h"
 #include "GlobalOpts.h"
-#include "Liberty.h"
 #include "LogUtils.h"
-#include "PlacementInfo.h"
 #include "Signal.h"
 #include "SignalCollector/SignalCollector.h"
 #include "Utils.h"
@@ -153,8 +154,17 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
 
 int main(int argc, char* argv[]) {
     const GlobalOpts opts = GlobalOpts::parseCmdArgs(argc, argv);
-    const Liberty liberty = Liberty(opts.liberty_area_scale, opts.liberty_paths);
     const PlacementInfo open_road{};
+
+    Liberty liberty;
+    if (opts.cell_area_json_path.empty() && !opts.liberty_paths.empty()) {
+        liberty = Liberty(opts.liberty_area_scale, opts.liberty_paths);
+    } else if (!opts.cell_area_json_path.empty() && opts.liberty_paths.empty()) {
+        liberty = Liberty(opts.cell_area_json_path);
+    } else {
+        SEE_CHECK(false) << "Missing essential input. Provide either liberty_paths or "
+                            "cell_area_json_path (via cmd flags or config.json)";
+    }
 
     SEE_CHECK(opts.campaign_number >= 1) << "Cannot run less than one campaign";
 

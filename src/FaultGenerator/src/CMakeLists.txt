@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_library(FaultGenerationToolLib
+  DesignInfo/CellAreaInfoParser.cpp
+  DesignInfo/Liberty.cpp
+  DesignInfo/LibertyParser.cpp
+  DesignInfo/OpenROADParser.cpp
+  DesignInfo/Placement.cpp
+
   FaultStrategy/Bendel.cpp
   FaultStrategy/Factory.cpp
   FaultStrategy/Random.cpp
@@ -13,10 +19,6 @@ add_library(FaultGenerationToolLib
 
   FaultCampaignWriter.cpp
   GlobalOpts.cpp
-  Liberty.cpp
-  LibertyParser.cpp
-  OpenROADParser.cpp
-  PlacementInfo.cpp
   FaultEventsSignalFormatter.cpp
 )
 

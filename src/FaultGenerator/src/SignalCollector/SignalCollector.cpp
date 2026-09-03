@@ -17,17 +17,16 @@
 #include "SignalCollector.h"
 
 #include "Cell.h"
+#include "DesignInfo/Liberty.h"
+#include "DesignInfo/Placement.h"
 #include "IsFlipFlopPredicate.h"
-#include "Liberty.h"
 #include "LogUtils.h"
 #include "Module.h"
-#include "PlacementInfo.h"
 #include "Signal.h"
 #include "SlangModuleCollector.h"
 #include "Utils.h"
 #include "YosysModuleCollector.h"
 
-#include <optional>
 #include <sstream>
 #include <string_view>
 

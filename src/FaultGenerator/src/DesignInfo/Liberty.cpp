@@ -16,10 +16,13 @@
 
 #include "Liberty.h"
 
+#include "DesignInfo/CellAreaInfoParser.h"
 #include "LibertyParser.h"
 
 #include <absl/log/check.h>
 #include <absl/log/log.h>
+#include <algorithm>
+#include <nlohmann/json.hpp>
 
 #include <string>
 #include <string_view>
@@ -28,8 +31,8 @@
 /*****************************************************************************/
 
 Liberty::Liberty(const std::vector<LibertyInfo>& infos_) : infos(infos_) {
-    for (const auto& infos : infos) {
-        for (const auto& [cell_type, cell_info] : infos.cells) {
+    for (const auto& info : infos) {
+        for (const auto& [cell_type, cell_info] : info.cells) {
             // Register ff_types
             if (cell_info.ff_info) {
                 ff_types.insert(cell_type);
@@ -45,6 +48,8 @@ Liberty::Liberty(const std::vector<LibertyInfo>& infos_) : infos(infos_) {
 
 Liberty::Liberty(unit::AREA area_scale, const std::vector<std::string>& filepaths)
     : Liberty(LibertyParser(area_scale).parseFiles(filepaths)) {}
+
+Liberty::Liberty(const std::filesystem::path& path) : Liberty({CellAreaJsonParser::parse(path)}) {}
 
 bool Liberty::isFF(std::string_view type) const {
     return ff_types.contains(type);

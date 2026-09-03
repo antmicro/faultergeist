@@ -18,6 +18,7 @@
 
 #include "UnitUtils.h"
 
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -56,14 +57,16 @@ struct LibertyInfo {
 };
 
 class Liberty {
-    const std::vector<LibertyInfo> infos;
+    std::vector<LibertyInfo> infos;
     std::unordered_set<std::string_view> ff_types;
     std::unordered_map<std::string_view, unit::AREA> cell_areas;
 
    public:
     Liberty() = default;
     Liberty(unit::AREA area_scale, const std::vector<std::string>&);
+    Liberty(const std::filesystem::path&);
     Liberty(const std::vector<LibertyInfo>&);
+
     bool isFF(std::string_view) const;
     std::optional<unit::AREA> getArea(std::string_view) const;
     bool contains(const std::string& cell_type) const;

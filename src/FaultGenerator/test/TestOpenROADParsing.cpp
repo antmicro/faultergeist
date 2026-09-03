@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "OpenROADParser.h"
-#include "PlacementInfo.h"
+#include "DesignInfo/OpenROADParser.h"
+#include "DesignInfo/Placement.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>
