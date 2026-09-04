@@ -19,50 +19,13 @@
 #include "FaultEventsSignalFormatter.h"
 #include "Signal.h"
 #include "TestUtils.h"
-#include "UnitUtils.h"
+#include "Utils.h"
 
 #include <gtest/gtest.h>
 
 #include <sstream>
 #include <string>
 #include <vector>
-
-const unit::AREA DEFAULT_AREA = 1.0 * unit::AREA::unit;  // this is not important to this module
-Signal createSignal(
-    std::string prefix_path,
-    std::string signal_name,
-    std::uint32_t width,
-    std::string hdlname = ""
-) {
-    return Signal(
-        {
-            .name = signal_name,
-            .type = "$dff",
-            .hdlname = std::move(hdlname),
-            .width = width,
-        },
-        std::move(prefix_path),
-        DEFAULT_AREA,
-        std::nullopt,
-        SignalType::REGISTER
-    );
-}
-
-FaultEvent createFromSignal(
-    std::span<const Signal> signals,
-    std::size_t id,
-    std::size_t time,
-    std::uint32_t bit
-) {
-    const auto& signal = signals[id];
-    return FaultEvent{
-        signals.begin() + id,
-        time * unit::SIM_TIME::unit,
-        combineSignalPath(signal.path_prefix, signal.cell.getPath()),
-        bit,
-        FaultEventType::SINGLE_EVENT_UPSET
-    };
-}
 
 TEST(FaultEventsSignalFormatter, NormalTest) {
     const std::vector<Signal> pre_synth_signals = {

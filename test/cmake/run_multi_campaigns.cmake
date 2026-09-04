@@ -28,6 +28,7 @@ foreach(_campaign IN LISTS _campaigns)
       --trace --trace-vcd
       -CFLAGS -g
       -j "${FI_JOBS}"
+      "${FI_PUBLIC_FLAT_ARG}"
       ${FI_VERILATOR_SOURCES}
       "${FI_FAULT_INJECTOR_SV}"
       -LDFLAGS "-L${FI_FAULT_INJECTOR_LIB_DIR} -lfaultergeist-inject"

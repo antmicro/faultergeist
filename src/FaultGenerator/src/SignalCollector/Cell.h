@@ -17,6 +17,7 @@
 #pragma once
 
 #include <ostream>
+#include <string_view>
 
 struct Cell {
     std::string name;
@@ -27,7 +28,9 @@ struct Cell {
     /* Returns signal path, in current (yosys dependent) implementation,
      * by taking prefix before first '$'.
      */
-    inline std::string getPath() const { return name.substr(0, name.find('$')); }
+    inline std::string_view getPath() const {
+        return std::string_view(name).substr(0, name.find('$'));
+    }
 
     friend std::ostream& operator<<(std::ostream& os, const Cell& cell) {
         os << "{ .name=" << cell.name;

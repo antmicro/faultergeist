@@ -5,7 +5,7 @@ set(SIMULATION_DIR "${WORK_DIR}/baseline")
 
 fi_add_verilated_sim(fi_e2e_worker_basic_baseline_sim
   SOURCES ${WORKER_SOURCES}
-  TRACE
+  TRACE PUBLIC_FLAT_RW
   TB_TOP "Vtop"
 )
 

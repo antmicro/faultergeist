@@ -31,6 +31,7 @@ struct GlobalOpts final {
     std::shared_ptr<FaultStrategy> strategy;
     std::vector<std::string> liberty_paths;
     unit::AREA liberty_area_scale;
+    std::optional<std::string> vlt_config;
     std::string cell_area_json_path;
 
     static GlobalOpts parseCmdArgs(int argc, char** argv);

@@ -19,9 +19,7 @@
 #include "DesignInfo/Placement.h"
 #include "SignalCollector/Cell.h"
 #include "UnitUtils.h"
-#include "Utils.h"
 
-#include <cstdint>
 #include <optional>
 #include <ostream>
 #include <span>

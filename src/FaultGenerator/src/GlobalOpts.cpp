@@ -91,6 +91,14 @@ ABSL_FLAG(
     "Alternative way to provide information available via liberty."
 );
 
+ABSL_FLAG(
+    std::optional<std::string>,
+    vlt_config,
+    std::nullopt,
+    "File path of where to print config of which signals verilator should expose. In absence of "
+    "this flag, config isn't written at all."
+);
+
 namespace {
 
 std::uint32_t clampThreadNumber(std::uint32_t thread_number) {
@@ -197,6 +205,13 @@ void from_json(const nlohmann::json& json, GlobalOpts& opts) {
     GET_OR_DEFAULT(netlist_path);
     GET_OR_DEFAULT(cell_area_json_path);
 #undef GET_OR_DEFAULT
+    if (params.contains("vlt_config")) {
+        VLOG(2) << "GlobalOpts.vlt_config set from json";
+        opts.vlt_config = params["vlt_config"].get<std::string>();
+    } else if (absl::GetFlag(FLAGS_vlt_config)) {
+        VLOG(2) << "GlobalOpts.vlt_config set from flag";
+        opts.vlt_config = absl::GetFlag(FLAGS_vlt_config);
+    }
     opts.campaign_number = params.value(
         "campaign_number",
         std::stoi(absl::GetFlagReflectionHandle(FLAGS_campaign_number).DefaultValue())
@@ -273,6 +288,7 @@ GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
             .strategy = FaultStrategyFactory::defaultStrategy(config),
             .liberty_paths = absl::GetFlag(FLAGS_liberty_paths),
             .liberty_area_scale = liberty_area_scale,
+            .vlt_config = absl::GetFlag(FLAGS_vlt_config),
             .cell_area_json_path = absl::GetFlag(FLAGS_cell_area_json_path),
         };
     } else {

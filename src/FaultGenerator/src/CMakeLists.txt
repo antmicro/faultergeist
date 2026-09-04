@@ -18,8 +18,9 @@ add_library(FaultGenerationToolLib
   SignalCollector/YosysModuleCollector.cpp
 
   FaultCampaignWriter.cpp
-  GlobalOpts.cpp
   FaultEventsSignalFormatter.cpp
+  GlobalOpts.cpp
+  VltConfigWriter.cpp
 )
 
 target_include_directories(FaultGenerationToolLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

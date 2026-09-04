@@ -18,4 +18,3 @@
     "liberty_paths": [ @LIB_FILES@ ]
   }
 }
-

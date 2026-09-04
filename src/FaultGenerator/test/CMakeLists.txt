@@ -118,6 +118,16 @@ add_test(NAME unit.generation.faultStrategy.generationDeterministic COMMAND Test
 #==============================================================================
 #==============================================================================
 #==============================================================================
+add_executable(TestVltConfigWriter TestVltConfigWriter.cpp)
+target_link_libraries(TestVltConfigWriter PRIVATE FaultGeneratorTestMain GTest::gmock)
+target_compile_definitions(TestVltConfigWriter PRIVATE
+  TEST_DATA_DIR="${TEST_DATA_DIR}"
+)
+add_test(NAME unit.generation.publicFlagSignal COMMAND TestVltConfigWriter)
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
 # Binary for testing LibertyParser
 add_executable(LibertyParserBin LibertyParser.cpp)
 target_link_libraries(LibertyParserBin

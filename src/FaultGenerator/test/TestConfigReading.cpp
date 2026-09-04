@@ -48,6 +48,7 @@ TEST(RandomStrategyTests, JsonConfig) {
     "top_module": "dff_worker",
     "top_instance": "worker",
     "netlist_path": "worker.json",
+    "vlt_config": "config-file.vlt",
     "fault_campaign_out": "random_file.csv",
     "liberty_area_scale": "26cm2",
     "campaign_number": 26,
@@ -65,6 +66,7 @@ TEST(RandomStrategyTests, JsonConfig) {
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_EQ(actual.campaign_number, 26);
     EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 26 * unit::cm2);
+    EXPECT_EQ(actual.vlt_config, "config-file.vlt");
 
     auto random = std::dynamic_pointer_cast<RandomStrategy>(actual.strategy);
     ASSERT_TRUE(random);

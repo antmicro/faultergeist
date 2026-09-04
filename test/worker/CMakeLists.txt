@@ -3,7 +3,6 @@ macro(define_worker_testbench_vars)
   set(WORKER_DESIGN_FILE_LIST "${WORKER_ROOT}/dff_worker.flist")
   set(WORKER_DESIGN_TOP "dff_worker")
   set(WORKER_SOURCES
-    ${WORKER_ROOT}/config.vlt
     ${WORKER_ROOT}/top.v
     ${WORKER_ROOT}/worker.v
     ${WORKER_ROOT}/comb_worker.v

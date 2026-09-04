@@ -20,6 +20,7 @@ set(FI_E2E_VERILOG_NETLIST_DEFAULT_FILENAME "netlist.v")
 set(FI_E2E_VERILATOR_OUTPUT_DIR_DEFAULT_FILENAME "obj_dir")
 set(FI_E2E_FAULTGEN_CONFIG_DEFAULT_FILENAME "config.json")
 set(FI_E2E_FAULT_CAMPAIGN_OUT_DEFAULT_FILENAME "fault_campaign_out.csv")
+set(FI_E2E_VLT_CONFIG_DEFAULT_FILENAME "flat_signals.vlt")
 set(FI_E2E_TB_TOP_DEFAULT_FILENAME "Vtop")
 set(FI_E2E_CAMPAIGN_DIR_DEFAULT_FILENAME "fault_campaign")
 set(FI_E2E_VCD_OUTPUT_PATH_DEFAULT_FILENAME "vlt_dump.vcd")
@@ -301,6 +302,23 @@ function(fi_add_ctest_scenario NAME TARGET_NAME)
   )
 endfunction()
 
+# fi_add_file_comparison(<target> <first-file> <second-file>
+#   [SORT] [DEPENDS <deps>...])
+#
+# Adds a target which fails when the two files differ. With SORT, lines are
+# sorted before comparison; duplicate lines remain significant.
+function(fi_add_file_comparison NAME FIRST_FILE SECOND_FILE)
+  set(options SORT)
+  set(multi_value_args DEPENDS)
+  cmake_parse_arguments(FI "${options}" "" "${multi_value_args}" ${ARGN})
+
+  add_custom_target("${NAME}"
+    COMMAND "${CMAKE_COMMAND}" -E compare_files "${FIRST_FILE}" "${SECOND_FILE}"
+    DEPENDS "${FIRST_FILE}" "${SECOND_FILE}" ${FI_DEPENDS}
+    VERBATIM
+  )
+endfunction()
+
 # fi_add_yosys_json(<target>
 #   [SCRIPT <path>] [WORK_DIR <dir>] [RTL_ROOT <dir>]
 #   [DESIGN_FILE_LIST <file list>] [DESIGN_TOP <module>]
@@ -482,7 +500,7 @@ endfunction()
 # On rerun, the helper removes OUTPUT and FAULT_CAMPAIGN_OUT, recreates the
 # required directories, invokes the tool, then touches OUTPUT.
 function(fi_add_fault_campaign NAME)
-  set(options ALLOW_EMPTY EXTRA_DEBUG)
+  set(options ALLOW_EMPTY NO_VLT_CONFIG EXTRA_DEBUG)
   set(one_value_args OUTPUT CONFIG_FILE WORK_DIR SIMULATION_DIR)
   set(multi_value_args ARGS DEPENDS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -509,6 +527,10 @@ function(fi_add_fault_campaign NAME)
   if(FI_CONFIG)
     list(APPEND _command "--config_file" "${FI_CONFIG}")
   endif()
+  if(NOT FI_NO_VLT_CONFIG)
+    _fi_resolve_implicit_arg_with_default(VLT_CONFIG "${FI_E2E_VLT_CONFIG_DEFAULT_FILENAME}" SIMULATION_DIR)
+    list(APPEND _command "--vlt_config" "${FI_VLT_CONFIG}")
+  endif()
   if(FI_EXTRA_DEBUG)
     list(APPEND _command --v=3 --stderrthreshold=0)
   endif()
@@ -526,6 +548,12 @@ function(fi_add_fault_campaign NAME)
   if(NOT "${FI_OUTPUT}" STREQUAL "${FI_FAULT_CAMPAIGN_OUT}")
     set(_byproducts BYPRODUCTS "${FI_FAULT_CAMPAIGN_OUT}")
   endif()
+  set(_outputs "${FI_OUTPUT}")
+  set(_remove_outputs "${FI_OUTPUT}" "${FI_FAULT_CAMPAIGN_OUT}")
+  if(FI_VLT_CONFIG)
+    list(APPEND _outputs "${FI_VLT_CONFIG}")
+    list(APPEND _remove_outputs "${FI_VLT_CONFIG}")
+  endif()
 
   set(_depends faultergeist-gen ${FI_CONFIG} ${FI_DEPENDS})
   _fi_resolve_pdk_path_and_append_dependency(_depends)
@@ -540,9 +568,9 @@ function(fi_add_fault_campaign NAME)
   endif()
 
   add_custom_command(
-    OUTPUT "${FI_OUTPUT}"
+    OUTPUT ${_outputs}
     ${_byproducts}
-    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${FI_OUTPUT}" "${FI_FAULT_CAMPAIGN_OUT}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf ${_remove_outputs}
     COMMAND "${CMAKE_COMMAND}" -E make_directory ${_make_dirs}
     COMMAND bash -c "\"$@\" > \"${_log_file}\" 2>&1" -- ${_command}
     ${_check_campaign}
@@ -557,7 +585,7 @@ endfunction()
 # fi_add_verilated_sim(<target>
 #   [FAULT_INJECTION] [TRACE] [NO_MAIN] [NO_BUILD] [VEER_MODE]
 #   [CAMPAIGN_FILE <path>] [WORK_DIR <dir>] [SIMULATION_DIR <dir>]
-#   [TB_TOP <name>] [VCD_OUTPUT_PATH <path>]
+#   [TB_TOP <name>] [VCD_OUTPUT_PATH <path>] [VLT_CONFIG <path>]
 #   [SOURCES <files...>] [DEPENDS <deps...>]
 #   [VERILATOR_EXTRA_ARGS <args...>])
 #
@@ -570,6 +598,8 @@ endfunction()
 #   SOURCES           Verilator input sources. May come from SOURCES.
 #   VCD_OUTPUT_PATH   Path compiled into the testbench for $dumpfile. May come
 #                     from VCD_OUTPUT_PATH. Defaults to vlt_dump.vcd.
+#   VLT_CONFIG        Verilator signal configuration. Defaults to
+#                     ${SIMULATION_DIR}/flat_signals.vlt.
 #
 # Common Verilator flags:
 #   --vpi --Mdir <SIMULATION_DIR> --prefix <TB_TOP>
@@ -594,8 +624,8 @@ endfunction()
 # Output:
 #   ${SIMULATION_DIR}/${TB_TOP} is exposed as <target>_EXECUTABLE in parent scope.
 function(fi_add_verilated_sim NAME)
-  set(options FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE)
-  set(one_value_args CAMPAIGN_FILE WORK_DIR SIMULATION_DIR TB_TOP VCD_OUTPUT_PATH)
+  set(options FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE PUBLIC_FLAT_RW)
+  set(one_value_args CAMPAIGN_FILE WORK_DIR SIMULATION_DIR TB_TOP VCD_OUTPUT_PATH VLT_CONFIG)
   set(multi_value_args SOURCES DEPENDS VERILATOR_EXTRA_ARGS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
@@ -605,6 +635,7 @@ function(fi_add_verilated_sim NAME)
   _fi_resolve_implicit_arg_with_default(FAULT_CAMPAIGN_OUT "${FI_E2E_FAULT_CAMPAIGN_OUT_DEFAULT_FILENAME}" SIMULATION_DIR)
   _fi_resolve_implicit_arg_with_default(TB_TOP "${FI_E2E_TB_TOP_DEFAULT_FILENAME}" "")
   _fi_resolve_implicit_arg_with_default(VCD_OUTPUT_PATH "${FI_E2E_VCD_OUTPUT_PATH_DEFAULT_FILENAME}" "")
+  _fi_resolve_implicit_arg_with_default(VLT_CONFIG "${FI_E2E_VLT_CONFIG_DEFAULT_FILENAME}" SIMULATION_DIR)
 
   set(_exe "${FI_SIMULATION_DIR}/${FI_TB_TOP}")
   set(_mdir "${FI_SIMULATION_DIR}")
@@ -615,7 +646,6 @@ function(fi_add_verilated_sim NAME)
       _fi_resolve_implicit_arg_with_default(FAULT_CAMPAIGN_OUT fault_campaign_out.csv SIMULATION_DIR)
       set(FI_CAMPAIGN_FILE "${FI_FAULT_CAMPAIGN_OUT}")
     endif()
-    list(APPEND _args "--public-flat-rw")
     list(APPEND _args "${FI_E2E_FAULT_INJECTOR_DIR}/faultergeist-inject.sv")
     list(APPEND _args -LDFLAGS "-L$<TARGET_FILE_DIR:faultergeist-inject> -lfaultergeist-inject")
     list(APPEND _args -DFAULT_INJECTION_ENABLE)
@@ -624,6 +654,14 @@ function(fi_add_verilated_sim NAME)
   endif()
   if(FI_TRACE)
     list(APPEND _args --trace --trace-vcd)
+  endif()
+  if(FI_TRACE OR FI_FAULT_INJECTION)
+    if(FI_PUBLIC_FLAT_RW)
+      list(APPEND _args "--public-flat-rw")
+    else()
+      list(APPEND _args "${FI_VLT_CONFIG}")
+      list(APPEND _depends "${FI_VLT_CONFIG}")
+    endif()
   endif()
   if(FI_VERILATOR_EXTRA_ARGS)
     list(APPEND _args ${FI_VERILATOR_EXTRA_ARGS})
@@ -800,7 +838,7 @@ function(fi_add_sim_run NAME)
 endfunction()
 
 # fi_add_multi_campaign_runs(<target>
-#   [CAMPAIGN_DIR <dir>] [LOG_DIR <dir>]
+#   [PUBLIC_FLAT_RW] [CAMPAIGN_DIR <dir>] [LOG_DIR <dir>] [VLT_CONFIG <path>]
 #   [WORK_DIR <dir>] [SIMULATION_DIR <dir>]
 #   [VERILATOR_SOURCES <files...>] [DEPENDS <deps...>])
 #
@@ -817,12 +855,13 @@ endfunction()
 #                      ${SIMULATION_DIR}/fault_campaign.
 #   LOG_DIR            Defaults to existing LOG_DIR, or
 #                      ${SIMULATION_DIR}/logs.
+#   PUBLIC_FLAT_RW     Use Verilator's --public-flat-rw instead of VLT_CONFIG.
 #
 # The build-time script creates one Verilator build directory and run log per
 # campaign, then fails with a list of campaigns that did not report "Mismatch".
 function(fi_add_multi_campaign_runs NAME)
-  set(options)
-  set(one_value_args CAMPAIGN_DIR LOG_DIR WORK_DIR SIMULATION_DIR)
+  set(options PUBLIC_FLAT_RW)
+  set(one_value_args CAMPAIGN_DIR LOG_DIR WORK_DIR SIMULATION_DIR VLT_CONFIG)
   set(multi_value_args VERILATOR_SOURCES DEPENDS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
@@ -831,6 +870,15 @@ function(fi_add_multi_campaign_runs NAME)
   _fi_resolve_implicit_arg_with_default(LOG_DIR logs SIMULATION_DIR)
   _fi_default_arg(FI_WORK_DIR WORK_DIR)
   _fi_default_arg(FI_VERILATOR_SOURCES SOURCES)
+
+  set(_depends faultergeist-inject ${FI_DEPENDS} ${FI_VERILATOR_SOURCES})
+  if(FI_PUBLIC_FLAT_RW)
+    set(_public_flat_arg --public-flat-rw)
+  else()
+    _fi_resolve_implicit_arg_with_default(VLT_CONFIG "${FI_E2E_VLT_CONFIG_DEFAULT_FILENAME}" SIMULATION_DIR)
+    set(_public_flat_arg "${FI_VLT_CONFIG}")
+    list(APPEND _depends "${FI_VLT_CONFIG}")
+  endif()
 
   set(_stamp "${FI_LOG_DIR}/${NAME}.stamp")
   add_custom_command(
@@ -845,9 +893,10 @@ function(fi_add_multi_campaign_runs NAME)
       "-DFI_FAULT_INJECTOR_SV=${FI_E2E_FAULT_INJECTOR_DIR}/faultergeist-inject.sv"
       "-DFI_FAULT_INJECTOR_LIB_DIR=$<TARGET_FILE_DIR:faultergeist-inject>"
       "-DFI_VERILATOR_SOURCES=$<JOIN:${FI_VERILATOR_SOURCES},;>"
+      "-DFI_PUBLIC_FLAT_ARG=${_public_flat_arg}"
       -P "${FI_E2E_SCRIPT_DIR}/run_multi_campaigns.cmake"
     COMMAND "${CMAKE_COMMAND}" -E touch "${_stamp}"
-    DEPENDS faultergeist-inject ${FI_DEPENDS} ${FI_VERILATOR_SOURCES}
+    DEPENDS ${_depends}
     VERBATIM
   )
   add_custom_target("${NAME}" DEPENDS "${_stamp}")

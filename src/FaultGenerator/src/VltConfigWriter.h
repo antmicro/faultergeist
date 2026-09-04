@@ -14,8 +14,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-`verilator_config
+#pragma once
 
-public_flat_rw -module "worker" -var "*"
-public_flat_rw -module "comb_worker" -var "*"
-public_flat_rw -module "dff_worker" -var "*"
+#include <filesystem>
+#include <span>
+
+struct Signal;
+
+class VltConfigWriter {
+   public:
+    static void write(std::filesystem::path, std::span<const Signal>);
+    static void write(std::ostream&, std::span<const Signal>);
+};

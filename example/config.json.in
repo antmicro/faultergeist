@@ -36,6 +36,7 @@
     "netlist_path": "netlist.json",
     "liberty_area_scale": "1um2",
     "fault_campaign_out": "fault_campaign_out.csv",
-    "liberty_paths": [ "worker/worker.lib" ]
+    "liberty_paths": [ "worker/worker.lib" ],
+    "vlt_config": "config.vlt"
   }
 }

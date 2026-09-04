@@ -26,6 +26,7 @@
 #include "Signal.h"
 #include "SignalCollector/SignalCollector.h"
 #include "Utils.h"
+#include "VltConfigWriter.h"
 
 #include <filesystem>
 #include <future>
@@ -68,9 +69,11 @@ std::vector<TaskInput> generate_tasks(
             // We could do it smarter, for example we could have a central
             // scheduler that schedules the jobs. For now this is unnecessary.
         };
-        std::stringstream ss;
-        ss << root_path << "/fault_campaign_" << new_config.seed << ".csv";
-        result.emplace_back(strategy->copy_with(new_config), signals, writer, ss.str());
+        std::stringstream campaign_output_filename;
+        campaign_output_filename << root_path << "/fault_campaign_" << new_config.seed << ".csv";
+        result.emplace_back(
+            strategy->copy_with(new_config), signals, writer, campaign_output_filename.str()
+        );
     }
     return result;
 }
@@ -109,12 +112,12 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
     FaultCampaignWriter writer{formatter};
 
     if (opts.campaign_number == 1) {
-        generate_single_campaign(
-            {.strategy = opts.strategy,
-             .signals = signals,
-             .writer = writer,
-             .output_file = opts.fault_campaign_out}
-        );
+        generate_single_campaign({
+            .strategy = opts.strategy,
+            .signals = signals,
+            .writer = writer,
+            .output_file = opts.fault_campaign_out,
+        });
         return;
     }
 
@@ -175,6 +178,10 @@ int main(int argc, char* argv[]) {
             opts.top_module, opts.top_instance, opts.sig_path_prefix, liberty, open_road
         )
             .collectFromFile(opts.netlist_path);
+
+    if (opts.vlt_config) {
+        VltConfigWriter::write(*opts.vlt_config, signals);
+    }
 
     generate_campaigns(opts, signals);
 }
