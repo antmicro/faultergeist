@@ -48,8 +48,7 @@ std::vector<Signal> SignalCollector::collectFromFile(const std::filesystem::path
     return collectFromModules(collected_modules);
 }
 
-std::vector<Signal> SignalCollector::collectFromModules(
-    std::vector<Module>& collected_modules
+std::vector<Signal> SignalCollector::collectFromModules(std::vector<Module>& collected_modules
 ) const {
     int top_module_index = findTopModule(collected_modules);
 

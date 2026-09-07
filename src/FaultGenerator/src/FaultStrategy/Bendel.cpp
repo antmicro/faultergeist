@@ -74,11 +74,9 @@ unit::TIME BendelStrategy::eventTime(
 std::vector<FaultEvent> BendelStrategy::generate(std::span<const Signal> signals) {
     LOG(INFO) << "Bendel strategy generating in parallel";
 
-    auto eventTime = [&](const Signal& signal,
-                         const BendelConfig::Stream& stream,
-                         FaultStrategy::RandomGen& gen) {
-        return this->eventTime(signal, stream, gen);
-    };
+    auto eventTime =
+        [&](const Signal& signal, const BendelConfig::Stream& stream, FaultStrategy::RandomGen& gen
+        ) { return this->eventTime(signal, stream, gen); };
     auto maxTime = [&](const BendelConfig::Stream& stream) { return stream.max_time; };
     using BendelRunner =
         FaultStrategyRunner<BendelConfig::Stream, decltype(eventTime), decltype(maxTime)>;

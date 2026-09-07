@@ -123,16 +123,13 @@ class FaultStrategyRunner {
         std::vector<std::future<std::size_t>> workers;
         for (std::size_t i = 0; i < config.thread_number; ++i) {
             const auto [begin, end] = scheduleWorkTime(i);
-            workers.push_back(
-                std::async(
-                    std::launch::async,
-                    [this, i, begin, end, &partial_results, &worker_generators]() {
-                        partial_results[i] =
-                            generateSingleTimeSlice(worker_generators[i], begin, end);
-                        return partial_results[i].size();
-                    }
-                )
-            );
+            workers.push_back(std::async(
+                std::launch::async,
+                [this, i, begin, end, &partial_results, &worker_generators]() {
+                    partial_results[i] = generateSingleTimeSlice(worker_generators[i], begin, end);
+                    return partial_results[i].size();
+                }
+            ));
         }
 
         std::size_t total_events = 0;

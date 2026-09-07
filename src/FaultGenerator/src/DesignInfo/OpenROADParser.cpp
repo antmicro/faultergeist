@@ -62,12 +62,11 @@ std::optional<CellPlacementInfo> parsePlacement(const std::string& line) {
     return CellPlacementInfo{
         .name = name,
         .type = type,
-        .placement = {
-            .width = width * cell_placement_scale,
-            .height = height * cell_placement_scale,
-            .x = x * cell_placement_scale,
-            .y = y * cell_placement_scale
-        }
+        .placement =
+            {.width = width * cell_placement_scale,
+             .height = height * cell_placement_scale,
+             .x = x * cell_placement_scale,
+             .y = y * cell_placement_scale}
     };
 }
 

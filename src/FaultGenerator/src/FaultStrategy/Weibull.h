@@ -61,10 +61,6 @@ class WeibullStrategy : public FaultStrategy {
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:
-    unit::TIME eventTime(
-        const Signal&,
-        const WeibullConfig::Stream&,
-        unit::LCS sigma0,
-        FaultStrategy::RandomGen&
-    );
+    unit::TIME
+    eventTime(const Signal&, const WeibullConfig::Stream&, unit::LCS sigma0, FaultStrategy::RandomGen&);
 };

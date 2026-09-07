@@ -118,8 +118,7 @@ std::vector<Module> SlangModuleCollector::collect(const std::shared_ptr<SyntaxTr
     return modules;
 }
 
-std::vector<Module> SlangModuleCollector::collectFromFile(
-    const std::filesystem::path& verilog
+std::vector<Module> SlangModuleCollector::collectFromFile(const std::filesystem::path& verilog
 ) const {
     SourceManager sourceManager;
     auto tree = slang::syntax::SyntaxTree::fromFile(verilog.c_str(), sourceManager);

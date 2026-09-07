@@ -359,10 +359,9 @@ TEST_F(SlangModuleCollectorTests, EmptyLiberty) {
 const std::vector<Module> normal_modules = {
     {.name = "dff_worker",
      .child_modules = {},
-     .cells = {
-         {.name = "counter$dff", .type = "$dff", .hdlname = "", .width = 32},
-         {.name = "resp$dff", .type = "$dff", .hdlname = "", .width = 32}
-     }}
+     .cells =
+         {{.name = "counter$dff", .type = "$dff", .hdlname = "", .width = 32},
+          {.name = "resp$dff", .type = "$dff", .hdlname = "", .width = 32}}}
 };
 
 TEST(SignalCollectorTests, EmptyTopModule) {

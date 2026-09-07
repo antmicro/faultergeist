@@ -49,18 +49,16 @@ std::vector<FaultEvent> RandomStrategy::generate(std::span<const Signal> signals
         );
         const Signal& signal = signals[idx];
 
-        fault_events.emplace_back(
-            FaultEvent{
-                signals.begin() + idx,
-                time_values[index],
-                /*signal_path=*/"",
-                int_dist(
-                    gen.random_generator,
-                    std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
-                ),
-                faultEventType(signal.type)
-            }
-        );
+        fault_events.emplace_back(FaultEvent{
+            signals.begin() + idx,
+            time_values[index],
+            /*signal_path=*/"",
+            int_dist(
+                gen.random_generator,
+                std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
+            ),
+            faultEventType(signal.type)
+        });
     }
     return fault_events;
 }

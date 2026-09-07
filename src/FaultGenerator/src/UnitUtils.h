@@ -93,8 +93,7 @@ SIM_TIME toSimTime(quantity<Unit, double> value) {
 }
 
 [[maybe_unused]]
-static std::optional<std::tuple<double, std::string_view>> parseQuantity(
-    std::string_view time_str
+static std::optional<std::tuple<double, std::string_view>> parseQuantity(std::string_view time_str
 ) {
     double simulation_time;
     const auto [ptr, ec] =
