@@ -8,6 +8,7 @@ add_library(FaultGenerationToolLib
   DesignInfo/Placement.cpp
 
   FaultStrategy/Bendel.cpp
+  FaultStrategy/Exhaustive.cpp
   FaultStrategy/Factory.cpp
   FaultStrategy/Random.cpp
   FaultStrategy/Weibull.cpp

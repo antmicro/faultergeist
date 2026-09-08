@@ -83,7 +83,7 @@ void generate_single_campaign(const TaskInput& input) {
     try {
         const std::vector<FaultEvent> fault_events = input.strategy->generate(input.signals);
         input.writer.write(input.output_file, fault_events);
-        VLOG(1) << "generate_single_campaign succeeded";
+        VLOG(1) << "generate_single_campaign succeeded, saving to " << input.output_file;
     } catch (...) {
         SEE_CHECK(false) << "generate_single_campaign failed for campaign: " << input.output_file;
     }

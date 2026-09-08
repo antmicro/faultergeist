@@ -14,12 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-`verilator_config
+#pragma once
 
-public_flat_rw -module "worker" -var "*"
-forceable -module "worker" -var "*"
-public_flat_rw -module "dff_worker" -var "*"
-forceable -module "dff_worker0" -var "*"
-forceable -module "dff_worker" -var "*"
+#include "FaultEvent.h"
+#include "FaultStrategy.h"
+#include "Signal.h"
 
-`verilog
+#include <span>
+#include <vector>
+
+class ExhaustiveStrategy : public FaultStrategy {
+   public:
+    explicit ExhaustiveStrategy(const Config&);
+    std::vector<FaultEvent> generate(std::span<const Signal>) override;
+
+    std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
+};

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+
+macro(define_packed_unpacked_testbench_vars)
+  set(PACKED_UNPACKED_RTL_ROOT "${PROJECT_SOURCE_DIR}/test/packed_unpacked")
+  set(PACKED_UNPACKED_DESIGN_FILE_LIST "${PACKED_UNPACKED_RTL_ROOT}/design.flist")
+  set(PACKED_UNPACKED_DESIGN_TOP "top")
+  set(PACKED_UNPACKED_SOURCES
+    ${PACKED_UNPACKED_RTL_ROOT}/top.sv
+    ${PROJECT_SOURCE_DIR}/test/e2e/coverage/SimMain.cpp
+  )
+
+  set(RTL_ROOT "${PACKED_UNPACKED_RTL_ROOT}")
+  set(DESIGN_FILE_LIST "${PACKED_UNPACKED_DESIGN_FILE_LIST}")
+  set(DESIGN_TOP "${PACKED_UNPACKED_DESIGN_TOP}")
+  set(SOURCES "${PACKED_UNPACKED_SOURCES}")
+  set(SYNTH_HDL_FRONTEND "slang")
+endmacro()

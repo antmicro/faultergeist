@@ -14,7 +14,7 @@ read_liberty -overwrite -setattr liberty_cell -lib {*}$::env(LIB_FILES)
 
 if { [env_var_equals SYNTH_HDL_FRONTEND slang] } {
   plugin -i slang
-  yosys read_slang --top $::env(DESIGN_TOP) --std latest --single-unit --allow-toplevel-iface-ports -F $::env(DESIGN_FILE_LIST)
+  yosys read_slang --top $::env(DESIGN_TOP) --std latest --single-unit --allow-toplevel-iface-ports -F $::env(DESIGN_FILE_LIST) --no-implicit-memories
 } else {
   read_verilog_file_list -F $::env(DESIGN_FILE_LIST)
 }

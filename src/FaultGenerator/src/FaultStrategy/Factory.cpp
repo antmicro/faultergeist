@@ -18,6 +18,7 @@
 
 #include "Bendel.h"
 #include "FaultStrategy.h"
+#include "FaultStrategy/Exhaustive.h"
 #include "LogUtils.h"
 #include "Random.h"
 #include "UnitUtils.h"
@@ -110,6 +111,9 @@ std::shared_ptr<FaultStrategy> FaultStrategyFactory::buildFromJson(
         const auto bendel_config = model_config.at("params").get<BendelConfig>();
         VLOG(1) << "Parsed bendel model from json";
         return std::make_shared<BendelStrategy>(config, bendel_config);
+    } else if (model_name == "exhaustive") {
+        LOG(INFO) << "Parsed exhaustive model from json";
+        return std::make_shared<ExhaustiveStrategy>(config);
     } else {
         SEE_CHECK(false) << "Unknown model: " << model_name << "\n";
     }

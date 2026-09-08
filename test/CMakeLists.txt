@@ -26,3 +26,4 @@ add_subdirectory(e2e/worker-synth-regression)
 
 # VeeR
 add_subdirectory(e2e/veer-basic)
+add_subdirectory(e2e/coverage)

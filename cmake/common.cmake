@@ -28,6 +28,8 @@ set(FI_E2E_VLT_CONFIG_DEFAULT_FILENAME "flat_signals.vlt")
 set(FI_E2E_TB_TOP_DEFAULT_FILENAME "Vtop")
 set(FI_E2E_CAMPAIGN_DIR_DEFAULT_FILENAME "fault_campaign")
 set(FI_E2E_VCD_OUTPUT_PATH_DEFAULT_FILENAME "vlt_dump.vcd")
+set(FI_E2E_COVERAGE_OUT_DEFAULT_FILENAME "coverage.dat")
+set(FI_E2E_COVERAGE_LOG_DEFAULT_FILENAME "coverage_summary.log")
 
 
 # pdk related variables
@@ -209,6 +211,15 @@ function(fi_require_e2e_tools)
     message(STATUS "E2E Verilator: ${VERILATOR_EXECUTABLE}")
   else()
     message(STATUS "E2E Verilator: NOT FOUND")
+  endif()
+
+  get_filename_component(_verilator_dir "${VERILATOR_EXECUTABLE}" DIRECTORY)
+  set(VERILATOR_COVERAGE_EXECUTABLE "${_verilator_dir}/verilator_coverage"
+      CACHE FILEPATH "Path to verilator_coverage")
+  if(EXISTS "${VERILATOR_COVERAGE_EXECUTABLE}")
+    message(STATUS "E2E Verilator coverage: ${VERILATOR_COVERAGE_EXECUTABLE}")
+  else()
+    message(STATUS "E2E Verilator coverage: NOT FOUND")
   endif()
 
   find_program(YOSYS_EXECUTABLE yosys)
@@ -597,7 +608,7 @@ endfunction()
 # Output:
 #   ${SIMULATION_DIR}/${TB_TOP} is exposed as <target>_EXECUTABLE in parent scope.
 function(fi_add_verilated_sim NAME)
-  set(options FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE PUBLIC_FLAT_RW)
+  set(options COVERAGE FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE PUBLIC_FLAT_RW)
   set(one_value_args CAMPAIGN_FILE WORK_DIR SIMULATION_DIR TB_TOP VCD_OUTPUT_PATH VLT_CONFIG)
   set(multi_value_args SOURCES DEPENDS VERILATOR_EXTRA_ARGS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -613,7 +624,7 @@ function(fi_add_verilated_sim NAME)
   set(_exe "${FI_SIMULATION_DIR}/${FI_TB_TOP}")
   set(_mdir "${FI_SIMULATION_DIR}")
   set(_args)
-  set(_depends ${FI_DEPENDS})
+  set(_depends ${FI_DEPENDS} ${FI_SOURCES})
   if(FI_FAULT_INJECTION)
     if(NOT FI_CAMPAIGN_FILE)
       _fi_resolve_implicit_arg_with_default(FAULT_CAMPAIGN_OUT fault_campaign_out.csv SIMULATION_DIR)
@@ -635,6 +646,9 @@ function(fi_add_verilated_sim NAME)
       list(APPEND _args "${FI_VLT_CONFIG}")
       list(APPEND _depends "${FI_VLT_CONFIG}")
     endif()
+  endif()
+  if (FI_COVERAGE)
+    list(APPEND _args --coverage-toggle)
   endif()
   if(FI_VERILATOR_EXTRA_ARGS)
     list(APPEND _args ${FI_VERILATOR_EXTRA_ARGS})
@@ -874,4 +888,55 @@ function(fi_add_multi_campaign_runs NAME)
   )
   add_custom_target("${NAME}" DEPENDS "${_stamp}")
   add_dependencies("${NAME}" "${FI_E2E_TOOLS_TARGET}")
+endfunction()
+
+# fi_add_coverage_check(<target>
+#   [GOLDEN_FILE <path>] [LOG <path>]
+#   [WORK_DIR <dir>] [SIMULATION_DIR <dir>] [COVERAGE_DAT <path>]
+#   [DEPENDS <deps...>])
+#
+# Runs verilator_coverage on a coverage.dat produced by a simulation and
+# optionally asserts the summary output matches a golden file.
+#
+# Required, explicit or implicit:
+#   WORK_DIR          Command working directory. coverage.dat is expected here.
+#
+# Optional/implicit:
+#   SIMULATION_DIR   Defaults to ${WORK_DIR}/obj_dir. Used for the log default.
+#   COVERAGE_DAT      Path to coverage.dat. Defaults to ${WORK_DIR}/coverage.dat.
+#   LOG               Log file for captured verilator_coverage output.
+#                     Defaults to ${SIMULATION_DIR}/coverage_summary.log.
+#   GOLDEN_FILE       When provided, the captured output is compared against
+#                     this file. The test fails if they differ.
+function(fi_add_coverage_check NAME)
+  set(options)
+  set(one_value_args GOLDEN_FILE LOG WORK_DIR SIMULATION_DIR COVERAGE_DAT)
+  set(multi_value_args DEPENDS)
+  cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+  _fi_default_arg(FI_WORK_DIR WORK_DIR)
+  _fi_resolve_implicit_arg_with_default(SIMULATION_DIR "${FI_E2E_VERILATOR_OUTPUT_DIR_DEFAULT_FILENAME}" WORK_DIR)
+  _fi_resolve_implicit_arg_with_default(COVERAGE_DAT "${FI_E2E_COVERAGE_OUT_DEFAULT_FILENAME}" WORK_DIR)
+  _fi_resolve_implicit_arg_with_default(LOG "${FI_E2E_COVERAGE_LOG_DEFAULT_FILENAME}" WORK_DIR)
+
+  set(_script_args
+    "-DFI_VERILATOR_COVERAGE=${VERILATOR_COVERAGE_EXECUTABLE}"
+    "-DFI_COVERAGE_DAT=${FI_COVERAGE_DAT}"
+    "-DFI_LOG=${FI_LOG}"
+  )
+  if(FI_GOLDEN_FILE)
+    list(APPEND _script_args "-DFI_GOLDEN_FILE=${FI_GOLDEN_FILE}")
+  endif()
+
+  set(_stamp "${FI_LOG}.stamp")
+  add_custom_command(
+    OUTPUT "${_stamp}"
+    COMMAND
+      "${CMAKE_COMMAND}"
+      ${_script_args}
+      -P "${FI_E2E_SCRIPT_DIR}/run_and_check_coverage.cmake"
+    DEPENDS ${FI_DEPENDS}
+    VERBATIM
+  )
+  add_custom_target("${NAME}" DEPENDS "${_stamp}")
 endfunction()

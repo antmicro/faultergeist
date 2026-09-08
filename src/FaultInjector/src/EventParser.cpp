@@ -75,6 +75,11 @@ void EventParser::gatherSignals(vpiHandle it, int indent) {
             int vpi_size = vpi_get(vpiSize, vh11);
             fin_printf("reg '%s', width: %d\n", fn, vpi_size);
 
+            if (vpi_size == 0) {
+                fin_printf("%%Error: Failed discover signal '%s' of size %d\n", fn, vpi_size);
+                fin_printf("Ignoring the signal\n");
+                continue;
+            }
             insertSignal(Signal{std::string{fn}, ManagedVpiHandle{vh11}, vpi_size});
         }
         vpiHandle scopeIt = vpi_iterate(vpiInternalScope, hndl.handle());

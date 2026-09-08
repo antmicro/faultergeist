@@ -50,6 +50,10 @@
 #endif
 
 inline void LogInitialize() {
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
     const auto* stderrthreshold = absl::FindCommandLineFlag("stderrthreshold");
     if (stderrthreshold == nullptr ||
         !absl::flags_internal::PrivateHandleAccessor::IsSpecifiedOnCommandLine(*stderrthreshold)) {
@@ -64,4 +68,5 @@ inline void LogInitialize() {
     absl::EnableLogPrefix(false);
 #endif
     absl::InitializeLog();
+    initialized = true;
 }
