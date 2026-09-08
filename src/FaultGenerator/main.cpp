@@ -79,13 +79,13 @@ std::vector<TaskInput> generate_tasks(
 }
 
 void generate_single_campaign(const TaskInput& input) {
-    LOG(INFO) << "call generate_single_campaign";
+    VLOG(1) << "call generate_single_campaign";
     try {
         const std::vector<FaultEvent> fault_events = input.strategy->generate(input.signals);
         input.writer.write(input.output_file, fault_events);
-        LOG(INFO) << "generate_single_campaign succeeded";
+        VLOG(1) << "generate_single_campaign succeeded";
     } catch (...) {
-        SEE_CHECK(false) << "generate_single_campaign failed";
+        SEE_CHECK(false) << "generate_single_campaign failed for campaign: " << input.output_file;
     }
 }
 
@@ -122,7 +122,7 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
     }
 
     create_directory(opts.fault_campaign_out);
-    LOG(INFO) << "call generate_many_campaigns";
+    VLOG(1) << "call generate_many_campaigns";
 
     std::vector<TaskInput> tasks = generate_tasks(
         opts.strategy,

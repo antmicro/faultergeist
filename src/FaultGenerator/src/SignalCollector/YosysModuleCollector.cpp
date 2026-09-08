@@ -37,7 +37,7 @@ unsigned int getSignalWidth(std::string_view width_bits) {
 
 void YosysModuleCollector::collectCell(Module& mod, Cell cell, const nlohmann::json& json) const {
     if (IsFlipFlop::check(cell, liberty)) {
-        LOG(INFO) << "Cell '" << cell.name << "' is a flip-flop";
+        VLOG(1) << "Cell '" << cell.name << "' is a flip-flop";
         if (!json.contains("parameters")) {
             LOG(WARNING) << "Cell '" << cell.name
                          << "' has no property 'parameters', Skipping cell.";
@@ -51,14 +51,14 @@ void YosysModuleCollector::collectCell(Module& mod, Cell cell, const nlohmann::j
             }
         }
         if (cell.hdlname.empty()) {
-            LOG(WARNING) << "Cell '" << cell.name << "' has no 'hldname' attribute. Defaulting "
-                         << "to automatically extracted path.";
+            VLOG(2) << "Cell '" << cell.name << "' has no 'hldname' attribute. Defaulting "
+                    << "to automatically extracted path.";
         }
 
         const auto& params = json["parameters"];
         if (!params.contains("WIDTH")) {
-            LOG(WARNING) << "Cell '" << cell.name
-                         << "' has no property 'parameters.WIDTH', setting value to 1.";
+            VLOG(2) << "Cell '" << cell.name
+                    << "' has no property 'parameters.WIDTH', setting value to 1.";
             cell.width = 1;
         } else {
             cell.width = getSignalWidth(params["WIDTH"].get<std::string_view>());
@@ -102,8 +102,7 @@ std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) co
             };
 
             if (auto it = existing_modules.find(cell.type); it != existing_modules.end()) {
-                LOG(INFO) << "Cell's '" << cell.name << "' is child of module '" << it->first
-                          << "'";
+                VLOG(2) << "Cell's '" << cell.name << "' is child of module '" << it->first << "'";
                 mod.child_modules.emplace_back(cell_key, it->second);
             }
             collectCell(mod, std::move(cell), cell_value);

@@ -100,12 +100,12 @@ std::vector<Module> SlangModuleCollector::collect(const std::shared_ptr<SyntaxTr
                 };
                 if (const auto it = existing_modules.find(cell.type);
                     it != existing_modules.end()) {
-                    LOG(INFO) << "Cell's '" << cell.name << "' is child of module '" << it->first
-                              << "'";
+                    VLOG(2) << "Cell's '" << cell.name << "' is child of module '" << it->first
+                            << "'";
                     mod.child_modules.emplace_back(cell.name, it->second);
                 }
                 if (IsFlipFlop::check(cell, liberty)) {
-                    LOG(INFO) << "Cell '" << cell.name << "' is a flip-flop";
+                    VLOG(1) << "Cell '" << cell.name << "' is a flip-flop";
                     mod.cells.emplace_back(std::move(cell));
                 } else {
                     VLOG(1) << "Cell '" << cell.name << "' is not a flip-flop. Skipping";

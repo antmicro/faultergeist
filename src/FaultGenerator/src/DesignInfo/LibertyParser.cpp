@@ -314,16 +314,6 @@ bool isGzFile(std::ifstream& file) {
     return b1 == 0x1f && b2 == 0x8b;
 }
 
-std::optional<double> stod_opt(std::string_view s) {
-    try {
-        return std::stod(s.data());
-    } catch (std::exception& e) {
-        LOG(WARNING) << "Failed to parse double" << e.what();
-    } catch (...) {
-    }
-    return std::nullopt;
-}
-
 }  // namespace
 
 std::optional<LibertyInfo> LibertyParser::parse(const std::string& filepath) {
@@ -333,7 +323,7 @@ std::optional<LibertyInfo> LibertyParser::parse(const std::string& filepath) {
         return std::nullopt;
     }
     if (isGzFile(file)) {
-        LOG(WARNING) << "Cannot parse a compressed file '" << filepath << "'. Skipping file";
+        LOG(ERROR) << "Cannot parse a compressed file '" << filepath << "'. Skipping file";
         return std::nullopt;
     }
 
@@ -354,7 +344,7 @@ std::optional<LibertyInfo> LibertyParser::parse(const std::string& filepath) {
             std::optional<FlipFlopInfo> ff_info;
             for (auto [field, _] : cell_parser) {
                 if (field.name == "area") {
-                    area = stod_opt(field.args[0]);
+                    area = stodOpt(field.args[0]);
                     if (area) {
                         VLOG(2) << "Cell '" << name << "' has area: " << *area;
                     } else {

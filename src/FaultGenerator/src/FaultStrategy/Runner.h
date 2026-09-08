@@ -83,8 +83,8 @@ class FaultStrategyRunner {
         max_times.reserve(streams.size());
         for (std::size_t i = 0; i < streams.size(); i++) {
             max_times.push_back(std::min(config.simulation_time, maxTimeCalc(streams[i])));
-            LOG(INFO) << "Calculated Stream " << i
-                      << " max time: " << std::format("{}", max_times[i]);
+            VLOG(2) << "Calculated Stream " << i
+                    << " max time: " << std::format("{}", max_times[i]);
         }
     }
 
@@ -98,9 +98,9 @@ class FaultStrategyRunner {
         };
         auto begin = boundary(worker_id);
         auto end = boundary(worker_id + 1);
-        LOG(INFO) << "Worker #" << worker_id << " [out of " << config.thread_number
-                  << "] will work on {" << std::format("{},{}", begin, end) << "} "
-                  << std::format("(max_time: {})", *max_elem);
+        VLOG(2) << "Worker #" << worker_id << " [out of " << config.thread_number
+                << "] will work on {" << std::format("{},{}", begin, end) << "} "
+                << std::format("(max_time: {})", *max_elem);
         return {begin, end};
     }
 
@@ -152,8 +152,8 @@ class FaultStrategyRunner {
         unit::TIME begin_time,
         unit::SIM_TIME end_time
     ) const {
-        LOG(INFO) << "Strategy generating on time slice from "
-                  << std::format("{} to {}", begin_time, end_time);
+        VLOG(1) << "Strategy generating on time slice from "
+                << std::format("{} to {}", begin_time, end_time);
         std::vector<FaultEvent> result;
         std::uniform_int_distribution<std::uint32_t> int_dist;
 
@@ -173,7 +173,7 @@ class FaultStrategyRunner {
                 );
             }
         }
-        LOG(INFO) << "Events added to the queue: " << event_queue.size();
+        VLOG(2) << "Events added to the queue: " << event_queue.size();
 
         while (!event_queue.empty()) {
             const ScheduledEvent next = event_queue.top();
@@ -212,7 +212,7 @@ class FaultStrategyRunner {
             );
         }
 
-        LOG(INFO) << "Weibull strategy generated " << result.size() << " faults";
+        VLOG(1) << "Weibull strategy generated " << result.size() << " faults";
         return result;
     }
 };

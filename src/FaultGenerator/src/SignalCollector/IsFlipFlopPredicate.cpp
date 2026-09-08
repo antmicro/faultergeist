@@ -27,7 +27,7 @@ class ByKnownFFTypes {
    public:
     bool operator()(const Cell& cell, const Liberty& liberty) const {
         auto result = liberty.isFF(cell.type);
-        LOG(INFO) << "Trying ByKnownFFTypes predicate, for: " << cell << " with: " << result;
+        VLOG(2) << "Trying ByKnownFFTypes predicate, for: " << cell << " with: " << result;
         if (!result && !liberty.contains(cell.type)) {
             LOG(WARNING) << "Cell type '" << cell.type << "' of cell " << cell.name
                          << " is not defined in any liberty file.";

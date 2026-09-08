@@ -70,7 +70,7 @@ unit::TIME WeibullStrategy::eventTime(
 }
 
 std::vector<FaultEvent> WeibullStrategy::generate(std::span<const Signal> signals) {
-    LOG(INFO) << "Weibull strategy generating in parallel";
+    VLOG(1) << "Weibull strategy generating in parallel";
 
     auto eventTime = [&](const Signal& signal,
                          const WeibullConfig::Stream& stream,
@@ -87,7 +87,7 @@ std::vector<FaultEvent> WeibullStrategy::generate(std::span<const Signal> signal
     WeibullRunner runner(eventTime, maxTime, config, weibull_config.streams, signals);
 
     std::vector<FaultEvent> result = runner.generateInParallelByTimeSlice();
-    LOG(INFO) << "Weibull strategy generated " << result.size() << " faults";
+    VLOG(1) << "Weibull strategy generated " << result.size() << " faults";
     return result;
 }
 

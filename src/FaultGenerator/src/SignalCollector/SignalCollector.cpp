@@ -32,7 +32,7 @@
 
 std::vector<Signal> SignalCollector::collectFromFile(const std::filesystem::path& netlist) const {
     std::vector<Module> collected_modules;
-    LOG(INFO) << "Collecting modules from '" << netlist << "'";
+    VLOG(1) << "Collecting modules from '" << netlist << "'";
 
     if (netlist.extension() == ".json") {
         YosysModuleCollector collector(liberty);
@@ -43,7 +43,7 @@ std::vector<Signal> SignalCollector::collectFromFile(const std::filesystem::path
     } else {
         SEE_CHECK(false) << "Unknown netlist file extension: " << netlist;
     }
-    LOG(INFO) << dumpAllModules(collected_modules);
+    VLOG(3) << dumpAllModules(collected_modules);
 
     return collectFromModules(collected_modules);
 }
@@ -69,8 +69,8 @@ int SignalCollector::findTopModule(const std::vector<Module>& modules) const {
             return index;
         }
     }
-    VLOG(3) << "Modules:\n" << dumpAllModules(modules);
-    VLOG(3) << "Top module: " << top_module;
+    LOG(INFO) << "Modules:\n" << dumpAllModules(modules);
+    LOG(INFO) << "Top module: " << top_module;
     SEE_CHECK(false) << "Top module not found. Cannot generate faults without signals.";
 }
 
@@ -88,14 +88,17 @@ void SignalCollector::recursivelyCollectSignals(
     std::vector<Module>& modules,
     Module& module
 ) const {
-    VLOG(2) << "Collecting signals for '" << module.name << "' under prefix: " << current_path;
+    VLOG(1) << "Collecting signals for '" << module.name << "' under prefix: " << current_path;
     for (const Cell& cell : module.cells) {
         std::optional<unit::AREA> area = liberty.getArea(cell.type);
         SEE_CHECK(area) << "Cell '" << cell.name << "' has no area in liberty";
 
         auto cell_placement = placement.getCellPlacement(cell.name);
         if (!cell_placement) {
-            LOG(WARNING) << "Cell '" << cell.name << "' has no placement info";
+            // FIXME: Currently, by default placement info is not provided. As such
+            // it shouldn't pollute logs and so it is marked as VLOG(3) for now.
+            // Once addressed it should be a WARNING or an ERROR
+            VLOG(3) << "Cell '" << cell.name << "' has no placement info";
         }
 
         collected_signals.emplace_back(

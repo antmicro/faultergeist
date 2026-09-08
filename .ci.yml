@@ -141,7 +141,7 @@ run-self-tests:
   script:
     - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys/build:$PATH
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_WEXTRA=ON
+    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DFI_E2E_GENERATOR_EXTRA_DEBUG=3 -DENABLE_WEXTRA=ON
     - cmake --build build -j $(nproc) 2>&1 | tee build/Testing/Temporary/cmake-build.log
     - ctest --test-dir build --output-on-failure --tests-regex 'unit|integration'
   artifacts:
@@ -164,7 +164,7 @@ run-self-tests:
     - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${SYNTH_CACHE_URL}" --depth 1 -b synth-cache synth_cache
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DVEER_JSON_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.json -DVEER_VERILOG_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.v
+    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DVEER_JSON_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.json -DVEER_VERILOG_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.v -DFI_E2E_GENERATOR_EXTRA_DEBUG=3
     - cmake --build build -j $(nproc) 2>&1 | tee build/cmake-build.log
     - ctest --test-dir build --output-on-failure --tests-regex e2e.${CI_PARALLEL_NAME}
   artifacts:
@@ -223,7 +223,7 @@ run-veer-synth:
   script:
     - set -o pipefail
     - export PATH=$(pwd)/third_party/yosys/build:$PATH
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
+    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DFI_E2E_GENERATOR_EXTRA_DEBUG=3
     - cmake --build build -j $(nproc) --target=fi_e2e_veer_basic_netlist 2>&1 | tee build/cmake-build.log
   artifacts:
     when: always

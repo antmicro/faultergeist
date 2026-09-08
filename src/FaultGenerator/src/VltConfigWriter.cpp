@@ -79,7 +79,7 @@ void writeSignal(std::ostream& os, const SignalElems& signal) {
 }
 
 void VltConfigWriter::write(std::filesystem::path path, std::span<const Signal> signals) {
-    LOG(INFO) << "Writing public_flat config to: " << path.c_str();
+    VLOG(1) << "Writing public_flat config to: " << path.c_str();
     std::ofstream of(path);
     SEE_PCHECK(of) << "cannot open '" << path << "'. " << "Skipping public_flat config.";
     write(of, signals);

@@ -100,15 +100,15 @@ std::shared_ptr<FaultStrategy> FaultStrategyFactory::buildFromJson(
     std::string_view model_name = model_config.at("name").get<std::string_view>();
     if (model_name == "random") {
         // TODO Here maybe warn that random model received params, when it doesn't expect to
-        LOG(INFO) << "Parsed random model from json";
+        VLOG(1) << "Parsed random model from json";
         return std::make_shared<RandomStrategy>(config);
     } else if (model_name == "weibull") {
         const auto weibull_config = model_config.at("params").get<WeibullConfig>();
-        LOG(INFO) << "Parsed weibull model from json";
+        VLOG(1) << "Parsed weibull model from json";
         return std::make_shared<WeibullStrategy>(config, weibull_config);
     } else if (model_name == "bendel") {
         const auto bendel_config = model_config.at("params").get<BendelConfig>();
-        LOG(INFO) << "Parsed bendel model from json";
+        VLOG(1) << "Parsed bendel model from json";
         return std::make_shared<BendelStrategy>(config, bendel_config);
     } else {
         SEE_CHECK(false) << "Unknown model: " << model_name << "\n";

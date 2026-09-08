@@ -11,7 +11,12 @@ set(FI_E2E_VEER_COMMON_DEFINES "${PROJECT_SOURCE_DIR}/third_party/Cores-VeeR-EL2
 set(FI_E2E_SKIP_CODE 77)
 
 # Cache variables
+set(FI_E2E_GENERATOR_EXTRA_DEBUG "" CACHE STRING "faultergeist-gen verbosity for E2E fault campaigns")
 option(FI_E2E_FORCE_SETUP_VEER "Run VeeR setup steps when building VeeR E2E targets" OFF)
+
+if(NOT "${FI_E2E_GENERATOR_EXTRA_DEBUG}" STREQUAL "" AND NOT "${FI_E2E_GENERATOR_EXTRA_DEBUG}" MATCHES "^[0-9]+$")
+  message(FATAL_ERROR "FI_E2E_GENERATOR_EXTRA_DEBUG must be a numeral")
+endif()
 
 # Default file names
 set(FI_E2E_JSON_NETLIST_DEFAULT_FILENAME "netlist.json")
@@ -456,6 +461,8 @@ endfunction()
 #                     ${SIMULATION_DIR}/config.json.
 #   ARGS              Direct faultergeist-gen arguments. When ARGS is
 #                     non-empty, no implicit config file is added.
+#   EXTRA_DEBUG       Adds --v=3. The -DEXTRA_DEBUG=<value> cache variable
+#                     overrides the verbosity for all fault campaigns.
 #   ALLOW_EMPTY       Do not fail when the generated campaign is empty.
 #
 # OUTPUT may be a stamp file. When OUTPUT differs from FAULT_CAMPAIGN_OUT, the
@@ -495,7 +502,9 @@ function(fi_add_fault_campaign NAME)
     _fi_resolve_implicit_arg_with_default(VLT_CONFIG "${FI_E2E_VLT_CONFIG_DEFAULT_FILENAME}" SIMULATION_DIR)
     list(APPEND _command "--vlt_config" "${FI_VLT_CONFIG}")
   endif()
-  if(FI_EXTRA_DEBUG)
+  if(NOT "${FI_E2E_GENERATOR_EXTRA_DEBUG}" STREQUAL "")
+    list(APPEND _command "--v=${FI_E2E_GENERATOR_EXTRA_DEBUG}" --stderrthreshold=0)
+  elseif(FI_EXTRA_DEBUG)
     list(APPEND _command --v=3 --stderrthreshold=0)
   endif()
 

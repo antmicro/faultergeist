@@ -79,3 +79,13 @@ static std::optional<std::size_t> findLastNotEscapedDollarSign(std::string_view 
     }
     return std::nullopt;
 }
+
+[[maybe_unused]]
+static std::optional<double> stodOpt(std::string_view& num) {
+    double result;
+    const auto [ptr, ec] = std::from_chars(num.data(), num.data() + num.size(), result);
+    if (ec != std::errc{} || ptr == num.data()) {
+        return std::nullopt;
+    }
+    return result;
+}
