@@ -80,7 +80,6 @@ TEST(BendelGenerationTest, CountsWithinTolerance) {
         std::accumulate(expected_counts.begin(), expected_counts.end(), 0);
     constexpr double stream_tolerance = 0.35;
     constexpr double total_tolerance = 0.05;
-    constexpr std::size_t samples = 10;
 
     std::vector<Signal> signals = createSignals(16 * 1024, DEFAULT_CELL_AREA, 1024);
 

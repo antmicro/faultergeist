@@ -55,7 +55,7 @@ std::vector<TaskInput> generate_tasks(
     std::vector<TaskInput> result;
     result.reserve(count);
 
-    for (int i = 0; i < count; i++) {
+    for (std::uint64_t i = 0; i < count; i++) {
         FaultStrategy::Config new_config = {
             .num_of_events = strategy->config.num_of_events,
             .seed = dist(seed_generator),

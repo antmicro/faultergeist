@@ -54,13 +54,11 @@ TEST(EventParsing, ParsesValidSeuEvent) {
 }
 
 TEST(EventParsing, NonExistantSignalGivesNullopt) {
-    std::string_view sig_path;
     auto result = parser.parse_line("100,TOP.null_sig,0,seu");
     EXPECT_FALSE(result.has_value());
 }
 
 TEST(EventParsing, ReturnsNulloptForUnknownType) {
-    std::string_view sig_path;
     auto result = parser.parse_line("100,TOP.sig,0,unknown");
     EXPECT_FALSE(result.has_value());
 }

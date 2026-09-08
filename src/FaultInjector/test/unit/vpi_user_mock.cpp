@@ -25,27 +25,27 @@
         std::string{"Mock function '"} + __func__ + "' in " __FILE__ " is not to be called" \
     )
 
-PLI_DLLISPEC PLI_INT32 vpi_release_handle(vpiHandle object) {
+PLI_DLLISPEC PLI_INT32 vpi_release_handle(vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }
 
-PLI_DLLISPEC vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle refHandle) {
+PLI_DLLISPEC vpiHandle vpi_iterate(PLI_INT32, vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }
 
-PLI_DLLISPEC vpiHandle vpi_scan(vpiHandle iterator) {
+PLI_DLLISPEC vpiHandle vpi_scan(vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }
 
-PLI_DLLISPEC PLI_BYTE8* vpi_get_str(PLI_INT32 property, vpiHandle object) {
+PLI_DLLISPEC PLI_BYTE8* vpi_get_str(PLI_INT32, vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }
 
-PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
+PLI_INT32 vpi_control(PLI_INT32, ...) {
     UNEXPECTED_VPI_CALL();
 }
 
-PLI_DLLISPEC PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
+PLI_DLLISPEC PLI_INT32 vpi_get(PLI_INT32, vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }
 

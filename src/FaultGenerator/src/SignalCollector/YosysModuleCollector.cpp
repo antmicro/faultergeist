@@ -82,7 +82,7 @@ std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) co
     for (const auto& [name, value] : modules_json.items()) {
         if (value.contains("cells") && value["cells"].is_object()) {
             existing_modules[name] = modules.size();
-            modules.push_back({name});
+            modules.emplace_back(name);
         }
     }
 
@@ -97,6 +97,8 @@ std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) co
             Cell cell{
                 .name = cell_key,
                 .type = cell_value.value("type", ""),
+                .hdlname = "",
+                .width = 1,
             };
 
             if (auto it = existing_modules.find(cell.type); it != existing_modules.end()) {

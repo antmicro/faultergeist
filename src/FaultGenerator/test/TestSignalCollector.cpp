@@ -158,7 +158,7 @@ TEST(YosysModuleCollectorTests, ModuleWithNoCells) {
 
 TEST(YosysModuleCollectorTests, NormalNetlist) {
     const auto& json = normal_json;
-    auto modules = YosysModuleCollector(normal_liberty).collect(normal_json);
+    auto modules = YosysModuleCollector(normal_liberty).collect(json);
     const auto& signals = SignalCollector(
                               normal_top_module,
                               normal_top_instance,
@@ -184,7 +184,7 @@ TEST(YosysModuleCollectorTests, EmptyLiberty) {
     const auto& json = normal_json;
     ASSERT_DEATH(
         {
-            auto modules = YosysModuleCollector({}).collect(normal_json);
+            auto modules = YosysModuleCollector({}).collect(json);
             const auto& signals = SignalCollector(
                                       normal_top_module,
                                       normal_top_instance,
@@ -565,23 +565,23 @@ TEST(SignalCollectorMiscTests, SlangMatchesYosysIgnoringAreaAndWidth) {
     const Liberty liberty = {{LibertyInfo{
         "test",
         {
-            {"AND2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"AOI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"AND2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"AOI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
             {"DFFHQNx1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}},
-            {"INVx1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NAND2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NAND3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NAND5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NOR2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NOR3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NOR4xp25_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"NOR5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"OA21x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"OAI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"OR2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"OR3x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"OR5x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
-            {"XNOR2xp5_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit}},
+            {"INVx1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NAND2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NAND3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NAND5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NOR2xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NOR3xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NOR4xp25_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"NOR5xp2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"OA21x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"OAI31xp33_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"OR2x2_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"OR3x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"OR5x1_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
+            {"XNOR2xp5_ASAP7_75t_R", {.area = 1.0 * unit::AREA::unit, .ff_info = std::nullopt}},
         },
     }}};
 

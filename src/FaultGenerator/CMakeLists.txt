@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
+if(ENABLE_WEXTRA)
+  add_compile_options(-Werror -Wall -Wextra)
+endif()
+
 add_subdirectory(src)
 
 # Build exec

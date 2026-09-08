@@ -44,7 +44,7 @@ class FaultInjector {
 
    public:
     FaultInjector(const std::string& input_file)
-        : eventParser{input_file}, vh_value_cb{registerCb()} {
+        : vh_value_cb{registerCb()}, eventParser{input_file} {
         if (eventParser.ok()) {
             (void)simulateSingleEventEffects();
         } else {

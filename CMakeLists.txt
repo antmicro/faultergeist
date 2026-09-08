@@ -6,6 +6,7 @@ project(Faultergeist LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(ENABLE_WEXTRA "Treat warnings as errors" OFF)
 
 include(CTest)
 include(cmake/third-party.cmake)

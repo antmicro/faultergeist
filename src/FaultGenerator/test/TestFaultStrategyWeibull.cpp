@@ -39,8 +39,6 @@ TEST(WeibullGenerationTest, CountsWithinTolerance) {
     constexpr std::uint64_t expected_total =
         std::accumulate(expected_counts.begin(), expected_counts.end(), 0);
 
-    constexpr std::size_t samples = 10;
-
     std::vector<Signal> signals =
         createSignals(4 * 1024, DEFAULT_CELL_AREA, 1024);  // total 4Mbit as in the experiment
 

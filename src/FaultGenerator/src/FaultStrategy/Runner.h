@@ -142,7 +142,6 @@ class FaultStrategyRunner {
         auto iter = result.begin();
         for (const auto& current : partial_results) {
             assert(original_ptr == result.data());
-            const auto result_size = result.size();
             iter = std::copy(current.begin(), current.end(), iter);
         }
         return result;

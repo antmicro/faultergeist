@@ -66,7 +66,9 @@ FaultEventsSignalFormatter::FaultEventsSignalFormatter(
 
 void FaultEventsSignalFormatter::insertUngrouped(std::size_t id, const Signal& signal) {
     real_signals_cache[id] = SignalData{
-        .path = combineSignalPath(signal.path_prefix, signal.cell.getPath()), .bit_idx = 0
+        .path = combineSignalPath(signal.path_prefix, signal.cell.getPath()),
+        .hdlname = signal.cell.hdlname,
+        .bit_idx = 0,
     };
 }
 

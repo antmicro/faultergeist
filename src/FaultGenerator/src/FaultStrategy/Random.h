@@ -23,7 +23,7 @@
 #include <span>
 #include <vector>
 
-class RandomStrategy : public FaultStrategy {
+class RandomStrategy final : public FaultStrategy {
    public:
     explicit RandomStrategy(const Config&);
     std::vector<FaultEvent> generate(std::span<const Signal>) override;

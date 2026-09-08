@@ -20,6 +20,7 @@
 
 #include <cstdlib>
 
+[[maybe_unused]]
 static void fin_printf(const char* formatp, ...) {
     va_list ap;
     va_start(ap, formatp);
@@ -27,6 +28,7 @@ static void fin_printf(const char* formatp, ...) {
     va_end(ap);
 }
 
+[[maybe_unused]]
 static void fin_fatal(const char* formatp, ...) {
     va_list ap;
     va_start(ap, formatp);

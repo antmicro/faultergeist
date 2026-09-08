@@ -9,6 +9,7 @@ cmake -B build \
   -DCMAKE_BUILD_TYPE=Debug \
   -DVEER_JSON_NETLIST_CACHE_PATH="" \
   -DVEER_VERILOG_NETLIST_CACHE_PATH="" \
-  -DFI_E2E_FORCE_SETUP_VEER=OFF
+  -DFI_E2E_FORCE_SETUP_VEER=OFF \
+  -DCMAKE_CXX_FLAGS='-Wall -Wextra'
 
-cmake --build build -j $(nproc)
+cmake --build build -j "$(nproc)"

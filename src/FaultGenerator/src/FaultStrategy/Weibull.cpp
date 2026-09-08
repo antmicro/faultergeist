@@ -43,7 +43,6 @@ WeibullStrategy::WeibullStrategy(const Config& config, const WeibullConfig& weib
     : FaultStrategy(config), weibull_config(weibullConfig) {}
 
 unit::TIME WeibullStrategy::eventTime(
-    const Signal& signal,
     const WeibullConfig::Stream& stream,
     unit::LCS sigma0,
     FaultStrategy::RandomGen& gen
@@ -80,7 +79,7 @@ std::vector<FaultEvent> WeibullStrategy::generate(std::span<const Signal> signal
             weibull_config.limiting_cross_section / weibull_config.reference_cell_area;
         const unit::LCS sigma0 =
             signal.area * static_cast<double>(signal.cell.width) * limiting_cross_section_factor;
-        return this->eventTime(signal, stream, sigma0, gen);
+        return this->eventTime(stream, sigma0, gen);
     };
     auto maxTime = [&](const WeibullConfig::Stream& stream) { return stream.max_time; };
     using WeibullRunner =

@@ -51,7 +51,7 @@ struct BendelConfig {
     unit::AREA reference_cell_area = 3.4046173095703125 * unit::um2;
 };
 
-class BendelStrategy : public FaultStrategy {
+class BendelStrategy final : public FaultStrategy {
    public:
     const BendelConfig bendel_config;
     explicit BendelStrategy(const Config&, const BendelConfig&);

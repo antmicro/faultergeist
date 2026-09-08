@@ -31,6 +31,7 @@
         (expected).numerical_value_in((expected).unit) \
     )
 
+[[maybe_unused]]
 static void testStreams(std::istream& s1, std::istream& s2) {
     int counter = 0;
     while (counter++ < 20) {
@@ -46,6 +47,7 @@ static void testStreams(std::istream& s1, std::istream& s2) {
     }
 }
 
+[[maybe_unused]]
 static std::vector<Signal> createSignals(
     size_t count,
     unit::AREA cell_area,
@@ -56,7 +58,7 @@ static std::vector<Signal> createSignals(
     for (size_t i = 0; i < count; ++i) {
         std::string signal_name = "signal_" + std::to_string(i);
         signals.push_back(Signal{
-            Cell{.name = signal_name, .width = cell_width},
+            Cell{.name = signal_name, .type = "DFF", .hdlname = "", .width = cell_width},
             /*prefix_path=*/"",
             cell_area,
             std::nullopt,
