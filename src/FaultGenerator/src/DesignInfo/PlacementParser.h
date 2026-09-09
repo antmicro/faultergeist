@@ -21,7 +21,7 @@
 
 class PlacementInfo;
 
-class OpenROADParser final {
+class PlacementParser final {
    public:
     static PlacementInfo parse(const std::string&);
 };

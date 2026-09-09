@@ -157,7 +157,9 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
 
 int main(int argc, char* argv[]) {
     const GlobalOpts opts = GlobalOpts::parseCmdArgs(argc, argv);
-    const PlacementInfo open_road{};
+    const PlacementInfo placement_info = opts.placement_info_path.empty()
+                                             ? PlacementInfo{}
+                                             : PlacementInfo{opts.placement_info_path};
 
     Liberty liberty;
     if (opts.cell_area_json_path.empty() && !opts.liberty_paths.empty()) {
@@ -175,7 +177,7 @@ int main(int argc, char* argv[]) {
     // changed, to not invalidate stored iterators. It must remain `const`
     const std::vector<Signal> signals =
         SignalCollector(
-            opts.top_module, opts.top_instance, opts.sig_path_prefix, liberty, open_road
+            opts.top_module, opts.top_instance, opts.sig_path_prefix, liberty, placement_info
         )
             .collectFromFile(opts.netlist_path);
 

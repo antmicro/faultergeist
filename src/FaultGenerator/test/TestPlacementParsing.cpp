@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "DesignInfo/OpenROADParser.h"
 #include "DesignInfo/Placement.h"
+#include "DesignInfo/PlacementParser.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>
@@ -55,29 +55,16 @@ std::vector<CellPlacementInfo> expected_cell_placement_info = {
     createCellPlacement("_21_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 0.216, 0.54),
     createCellPlacement("_22_", "INVx1_ASAP7_75t_R", 0.162, 0.27, 1.782, 0.54),
     createCellPlacement("_23_", "TIEHIx1_ASAP7_75t_R", 0.162, 0.27, 1.026, 1.62),
-    createCellPlacement("val\\[0\\]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0),
-    createCellPlacement(
-        "val\\[1\\]$_DFF_PP1_",
-        "DFFASRHQNx1_ASAP7_75t_R",
-        1.404,
-        0.27,
-        0.378,
-        0.54
-    ),
-    createCellPlacement(
-        "val\\[2\\]$_DFF_PP1_",
-        "DFFASRHQNx1_ASAP7_75t_R",
-        1.404,
-        0.27,
-        0.324,
-        0.54
-    ),
+    // The CSV escapes these names; lookups use the netlist spelling.
+    createCellPlacement("val[0]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0),
+    createCellPlacement("val[1]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.378, 0.54),
+    createCellPlacement("val[2]$_DFF_PP1_", "DFFASRHQNx1_ASAP7_75t_R", 1.404, 0.27, 0.324, 0.54),
 };
 
-TEST(OpenROADParsing, ExtractFromExampleCSV) {
+TEST(PlacementParsing, ExtractFromExampleCSV) {
     auto filepath = std::string(TEST_DATA_DIR) + "/example.csv.in";
 
-    auto parse_result = OpenROADParser::parse(filepath);
+    auto parse_result = PlacementParser::parse(filepath);
 
     auto device_info = parse_result.getDeviceInfo();
     ASSERT_TRUE(device_info);

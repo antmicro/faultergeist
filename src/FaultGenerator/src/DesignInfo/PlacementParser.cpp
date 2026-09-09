@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "OpenROADParser.h"
+#include "PlacementParser.h"
 
 #include "Placement.h"
 
@@ -70,7 +70,7 @@ std::optional<CellPlacementInfo> parsePlacement(const std::string& line) {
     };
 }
 
-PlacementInfo OpenROADParser::parse(const std::string& path) {
+PlacementInfo PlacementParser::parse(const std::string& path) {
     std::ifstream file{path};
     SEE_PCHECK(file) << "Failed to open '" << path << "'";
 

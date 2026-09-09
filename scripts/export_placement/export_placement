@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Copyright 2026 Antmicro <antmicro.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+openroad="${OPENROAD:-openroad}"
+csv_file=""
+odb_file=""
+
+function usage {
+  cat <<EOF
+Usage: $(basename "$0") -o CSV [--openroad PATH] DESIGN.odb
+
+  -o CSV            output CSV
+  --openroad PATH   openroad binary (default: \$OPENROAD, else from PATH)
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  -o | --output)
+    csv_file="$2"
+    shift 2
+    ;;
+  --openroad)
+    openroad="$2"
+    shift 2
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+  *)
+    if [[ -n "$odb_file" ]]; then
+      echo "Unexpected argument: $1" >&2
+      exit 2
+    fi
+    odb_file="$1"
+    shift
+    ;;
+  esac
+done
+
+if [[ -z "$odb_file" ]]; then
+  usage >&2
+  exit 2
+fi
+if [[ ! -f "$odb_file" ]]; then
+  echo "No such file: $odb_file" >&2
+  exit 1
+fi
+if [[ -z "$csv_file" ]]; then
+  usage >&2
+  exit 2
+fi
+if ! command -v "$openroad" >/dev/null 2>&1; then
+  echo "OpenROAD not found: $openroad" >&2
+  exit 1
+fi
+
+exec "$openroad" -python -no_splash -exit \
+  "$script_dir/export_placement_cmd.py" "$script_dir" "$odb_file" "$csv_file"

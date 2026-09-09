@@ -21,6 +21,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct Placement {
@@ -51,13 +52,14 @@ struct CellPlacementInfo {
 
 class PlacementInfo {
     std::optional<Placement> device_info;
-    std::vector<CellPlacementInfo> cell_info;
+    std::unordered_map<std::string, Placement> cell_info;
 
    public:
     PlacementInfo() = default;
     PlacementInfo(const std::string&);
     PlacementInfo(std::optional<Placement>, std::vector<CellPlacementInfo>);
     const std::optional<Placement>& getDeviceInfo() const { return device_info; }
+    bool empty() const { return cell_info.empty(); }
 
     std::optional<Placement> getCellPlacement(const std::string& cell_name) const;
 };

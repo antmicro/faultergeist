@@ -26,6 +26,7 @@ struct GlobalOpts final {
     std::string top_module;
     std::string top_instance;
     std::string netlist_path;
+    std::string placement_info_path;
     std::string fault_campaign_out;
     std::uint64_t campaign_number;
     std::shared_ptr<FaultStrategy> strategy;

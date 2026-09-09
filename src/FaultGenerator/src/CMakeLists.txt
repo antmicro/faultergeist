@@ -4,7 +4,7 @@ add_library(FaultGenerationToolLib
   DesignInfo/CellAreaInfoParser.cpp
   DesignInfo/Liberty.cpp
   DesignInfo/LibertyParser.cpp
-  DesignInfo/OpenROADParser.cpp
+  DesignInfo/PlacementParser.cpp
   DesignInfo/Placement.cpp
 
   FaultStrategy/Bendel.cpp

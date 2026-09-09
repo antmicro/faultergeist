@@ -94,10 +94,7 @@ void SignalCollector::recursivelyCollectSignals(
         SEE_CHECK(area) << "Cell '" << cell.name << "' has no area in liberty";
 
         auto cell_placement = placement.getCellPlacement(cell.name);
-        if (!cell_placement) {
-            // FIXME: Currently, by default placement info is not provided. As such
-            // it shouldn't pollute logs and so it is marked as VLOG(3) for now.
-            // Once addressed it should be a WARNING or an ERROR
+        if (!cell_placement && !placement.empty()) {
             VLOG(3) << "Cell '" << cell.name << "' has no placement info";
         }
 

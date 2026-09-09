@@ -16,22 +16,32 @@
 
 #include "Placement.h"
 
-#include "OpenROADParser.h"
+#include "PlacementParser.h"
+
+#include <algorithm>
+#include <string>
+#include <utility>
 
 PlacementInfo::PlacementInfo(
     std::optional<Placement> device_info,
     std::vector<CellPlacementInfo> cell_info
 )
-    : device_info(std::move(device_info)), cell_info(std::move(cell_info)) {}
+    : device_info(std::move(device_info)) {
+    this->cell_info.reserve(cell_info.size());
+    for (auto& info : cell_info) {
+        // OpenROAD escapes Verilog instance names
+        std::erase(info.name, '\\');
+        this->cell_info.emplace(std::move(info.name), info.placement);
+    }
+}
 
 PlacementInfo::PlacementInfo(const std::string& filepath)
-    : PlacementInfo(OpenROADParser::parse(filepath)) {}
+    : PlacementInfo(PlacementParser::parse(filepath)) {}
 
 std::optional<Placement> PlacementInfo::getCellPlacement(const std::string& cell_name) const {
-    for (const auto& info : cell_info) {
-        if (info.name == cell_name) {
-            return info.placement;
-        }
+    auto found = cell_info.find(cell_name);
+    if (found == cell_info.end()) {
+        return std::nullopt;
     }
-    return std::nullopt;
+    return found->second;
 }

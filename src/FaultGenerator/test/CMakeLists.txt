@@ -62,12 +62,12 @@ add_test(NAME unit.generation.gtest.cellAreaInfoParser COMMAND TestCellAreaInfoP
 #==============================================================================
 #==============================================================================
 #==============================================================================
-add_executable(TestOpenROADParsing TestOpenROADParsing.cpp)
-target_link_libraries(TestOpenROADParsing PRIVATE FaultGeneratorTestMain)
-target_compile_definitions(TestOpenROADParsing PRIVATE
+add_executable(TestPlacementParsing TestPlacementParsing.cpp)
+target_link_libraries(TestPlacementParsing PRIVATE FaultGeneratorTestMain)
+target_compile_definitions(TestPlacementParsing PRIVATE
   TEST_DATA_DIR="${TEST_DATA_DIR}"
 )
-add_test(NAME unit.generation.gtest.openroadParsing COMMAND TestOpenROADParsing)
+add_test(NAME unit.generation.gtest.placementParsing COMMAND TestPlacementParsing)
 
 #==============================================================================
 #==============================================================================
