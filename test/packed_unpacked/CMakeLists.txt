@@ -6,7 +6,6 @@ macro(define_packed_unpacked_testbench_vars)
   set(PACKED_UNPACKED_DESIGN_TOP "top")
   set(PACKED_UNPACKED_SOURCES
     ${PACKED_UNPACKED_RTL_ROOT}/top.sv
-    ${PROJECT_SOURCE_DIR}/test/e2e/coverage/SimMain.cpp
   )
 
   set(RTL_ROOT "${PACKED_UNPACKED_RTL_ROOT}")

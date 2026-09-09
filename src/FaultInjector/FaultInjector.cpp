@@ -251,7 +251,7 @@ class FaultInjector {
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpiVectorToString(vpi_value, event.signal->vpi_size).data()
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_value.value.vector[event.bit_idx / 32].aval ^= 1 << (event.bit_idx % 32);
         fin_printf(
@@ -260,7 +260,7 @@ class FaultInjector {
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpiVectorToString(vpi_value, event.signal->vpi_size).data()
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiNoDelay);
     }

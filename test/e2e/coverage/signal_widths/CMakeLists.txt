@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(WORK_DIR "${CMAKE_CURRENT_BINARY_DIR}/work")
-define_coverage_testbench_vars()
+define_signal_widths_testbench_vars()
 
 set(JSON_NETLIST "${WORK_DIR}/netlist.json")
 set(NETLIST_PATH "${JSON_NETLIST}")
@@ -27,6 +27,7 @@ fi_add_verilated_sim(fi_e2e_coverage_json_sim
   NO_MAIN
   TRACE
   VERILATOR_EXTRA_ARGS ${VERILATOR_EXTRA_ARGS}
+  SOURCES ${SOURCES} ${SIM_MAIN_FILE}
 )
 
 fi_add_sim_run(fi_e2e_coverage_json_run

@@ -1,8 +1,8 @@
-macro(define_coverage_testbench_vars)
+macro(define_signal_widths_testbench_vars)
   set(COVERAGE_RTL_ROOT "${PROJECT_SOURCE_DIR}/test/signal_widths")
   set(COVERAGE_DESIGN_FILE_LIST "${COVERAGE_RTL_ROOT}/design.flist")
   set(COVERAGE_DESIGN_TOP "top")
-  set(COVERAGE_SOURCES ${COVERAGE_RTL_ROOT}/top.sv ${PROJECT_SOURCE_DIR}/test/e2e/coverage/SimMain.cpp)
+  set(COVERAGE_SOURCES ${COVERAGE_RTL_ROOT}/top.sv)
 
   set(RTL_ROOT "${COVERAGE_RTL_ROOT}")
   set(DESIGN_FILE_LIST "${COVERAGE_DESIGN_FILE_LIST}")

@@ -27,6 +27,7 @@ fi_add_verilated_sim(fi_e2e_coverage_packed_unpacked_json_sim
   NO_MAIN
   TRACE
   VERILATOR_EXTRA_ARGS ${VERILATOR_EXTRA_ARGS}
+  SOURCES ${SOURCES} ${SIM_MAIN_FILE}
 )
 
 fi_add_sim_run(fi_e2e_coverage_packed_unpacked_json_run

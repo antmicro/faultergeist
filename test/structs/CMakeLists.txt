@@ -6,7 +6,6 @@ macro(define_structs_testbench_vars)
   set(STRUCTS_DESIGN_TOP "top")
   set(STRUCTS_SOURCES
     ${STRUCTS_RTL_ROOT}/top.sv
-    ${PROJECT_SOURCE_DIR}/test/e2e/coverage/SimMain.cpp
   )
 
   set(RTL_ROOT "${STRUCTS_RTL_ROOT}")

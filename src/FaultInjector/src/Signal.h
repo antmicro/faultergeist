@@ -25,7 +25,7 @@ namespace fin {
 struct Signal {
     std::string path;
     ManagedVpiHandle vpi_handle;
-    int vpi_size;
+    int vpi_width;
 
     vpiHandle handle() const { return vpi_handle.handle(); }
 };

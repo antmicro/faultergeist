@@ -219,7 +219,7 @@ function(fi_require_e2e_tools)
   if(EXISTS "${VERILATOR_COVERAGE_EXECUTABLE}")
     message(STATUS "E2E Verilator coverage: ${VERILATOR_COVERAGE_EXECUTABLE}")
   else()
-    message(STATUS "E2E Verilator coverage: NOT FOUND")
+    message(STATUS "E2E Verilator coverage: NOT FOUND (under '${_verilator_dir}')")
   endif()
 
   find_program(YOSYS_EXECUTABLE yosys)
