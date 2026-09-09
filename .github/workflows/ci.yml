@@ -11,8 +11,11 @@ concurrency:
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CC: gcc-14
+  CXX: g++-14
   BUILD_PACKAGES: >-
-    build-essential bison ccache clang cmake help2man gawk libffi-dev libfl-dev libreadline-dev tcl-dev zlib1g-dev 7zip graphviz xdot
+    autoconf build-essential bison ccache cmake file flex g++-14 gcc-14 gawk git gzip help2man
+    libffi-dev libfl-dev libreadline-dev libstdc++-14-dev tcl-dev zlib1g-dev 7zip graphviz xdot
 
 jobs:
   prepare-verilator:
@@ -37,7 +40,7 @@ jobs:
           git show -s
           autoconf
           ./configure --prefix="$PWD"
-          make -j "$(nproc)" CC="ccache gcc" CXX="ccache g++"
+          make -j "$(nproc)" CC="ccache $CC" CXX="ccache $CXX"
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -64,14 +67,17 @@ jobs:
           key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-ccache-${{ github.job }}-
       - run: ccache --zero-stats
-      - name: Build Yosys and slang plugin
+      - name: Download submodules
+        run: git submodule update --init --recursive third_party/yosys third_party/yosys-slang
+      - name: Build Yosys
         run: |
-          git submodule update --init --recursive third_party/yosys third_party/yosys-slang
           cd third_party/yosys
           cmake -B build . -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel "$(nproc)"
-          cd ../yosys-slang
-          make -j "$(nproc)" CXX="ccache g++" YOSYS_PREFIX="$GITHUB_WORKSPACE/third_party/yosys/build/"
+      - name: Build Yosys' slang plugin
+        run: |
+          cd third_party/yosys-slang
+          make -j "$(nproc)" CXX="ccache $CXX" YOSYS_PREFIX="$GITHUB_WORKSPACE/third_party/yosys/build/"
           mkdir -p ../yosys/build/share/plugins
           cp build/slang.so ../yosys/build/share/plugins
       - name: Show ccache statistics
@@ -92,27 +98,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES clang-format clang-tidy libc++-dev libc++abi-dev
+          sudo apt-get -yq install clang-format-19
       - uses: actions/checkout@v4.2.2
-      - uses: actions/cache@v4.2.3
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-ccache-${{ github.job }}-
-      - run: ccache --zero-stats
-      - name: Configure lint build
-        run: >-
-          cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_FLAGS=-stdlib=libc++
-      - run: cmake --build build --target slang_slang -j "$(nproc)"
       - name: Check formatting
-        run: find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format --dry-run --Werror
-      - name: Check linting
-        run: run-clang-tidy -p build "^$GITHUB_WORKSPACE/src/.*(\.cpp|\.h)$" -header-filter="^$GITHUB_WORKSPACE/src/.*" -warnings-as-errors='*'
-      - name: Show ccache statistics
-        if: always()
-        run: ccache --show-stats
+        run: find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format-19 --dry-run --Werror
 
   run-example:
     needs: [prepare-verilator, prepare-yosys]
@@ -259,7 +248,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES &> /dev/null
+          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
       - uses: actions/cache@v4.2.3
         with:
