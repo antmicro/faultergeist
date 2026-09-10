@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+macro(define_multi_scope_signal_testbench_vars)
+  set(MULTI_SCOPE_SIGNAL_RTL_ROOT "${PROJECT_SOURCE_DIR}/test/multi_scope_signal")
+  set(MULTI_SCOPE_SIGNAL_DESIGN_FILE_LIST "${MULTI_SCOPE_SIGNAL_RTL_ROOT}/design.flist")
+  set(MULTI_SCOPE_SIGNAL_DESIGN_TOP "top")
+  set(MULTI_SCOPE_SIGNAL_SOURCES
+    ${MULTI_SCOPE_SIGNAL_RTL_ROOT}/top.sv
+  )
+
+  set(RTL_ROOT "${MULTI_SCOPE_SIGNAL_RTL_ROOT}")
+  set(DESIGN_FILE_LIST "${MULTI_SCOPE_SIGNAL_DESIGN_FILE_LIST}")
+  set(DESIGN_TOP "${MULTI_SCOPE_SIGNAL_DESIGN_TOP}")
+  set(SOURCES "${MULTI_SCOPE_SIGNAL_SOURCES}")
+  set(SYNTH_HDL_FRONTEND "slang")
+endmacro()

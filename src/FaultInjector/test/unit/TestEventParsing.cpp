@@ -25,9 +25,10 @@ class EventParserTester : public fin::EventParser {
    public:
     EventParserTester(double multiplier = 1.0) {
         time_multiplier = multiplier;
-        insertSignal({"TOP.test_signal", nullptr, 0});
-        insertSignal({"TOP.another_sig", nullptr, 0});
-        insertSignal({"TOP.sig", nullptr, 0});
+        insertSignal({"TOP.test_signal", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        insertSignal({"TOP.another_sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        insertSignal({"TOP.sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        insertSignal({"TOP.custom_sig", /*vpi_handle=*/nullptr, /*vpi_size=*/32, /*range_min=*/16});
     }
 
     std::optional<fin::Event> parse_line(std::string_view line) { return parse(line); }
@@ -79,6 +80,15 @@ TEST(EventParsing, ScalesFemtosecondsToDifferentSimulationUnits) {
         ASSERT_TRUE(result.has_value());
         EXPECT_EQ(result->time, expected_ticks);
     }
+}
+
+TEST(EventParsing, AdjustsBitIndexToLSB) {
+    auto result = parser.parse_line("50,TOP.custom_sig,20,seu");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->time, 50);
+    EXPECT_EQ(result->sig_path(), "TOP.custom_sig");
+    EXPECT_EQ(result->bit_idx, 4);
+    EXPECT_EQ(result->type, fin::Event::Type::SingleEventUpset);
 }
 
 }  // namespace

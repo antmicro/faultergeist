@@ -1,8 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
-set(SIM_MAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/SimMain.cpp")
+set(SIM_MAIN_FILE "${PROJECT_SOURCE_DIR}/test/SimMain.cpp")
+set(COVERAGE_CONFIG_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/config.json.in")
+set(VERILATOR_EXTRA_ARGS -timescale-override 1fs/1fs)
 
+add_subdirectory(bit_range)
+add_subdirectory(case_generate)
+add_subdirectory(for_generate)
+add_subdirectory(generate_instances)
+add_subdirectory(if_generate)
+add_subdirectory(instance_array)
+add_subdirectory(multi_instance)
+add_subdirectory(multi_scope_signal)
+add_subdirectory(named_proc_block)
+add_subdirectory(nested)
+add_subdirectory(nested_generate)
 add_subdirectory(packed_unpacked)
+add_subdirectory(range)
 add_subdirectory(signal_widths)
 add_subdirectory(structs)
 add_subdirectory(worker)

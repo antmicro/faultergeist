@@ -5,7 +5,7 @@ add_subdirectory(unit)
 set(WORK_DIR "${CMAKE_CURRENT_BINARY_DIR}/work")
 set(VLT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/config.vlt")
 define_worker_testbench_vars()
-set(SOURCES ${WORKER_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/TestWorker.cpp)
+set(SIM_MAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/TestWorker.cpp")
 
 set(SIMULATION_DIR "${WORK_DIR}/baseline")
 fi_add_verilated_sim(fi_integration_injection_baseline_sim
@@ -83,7 +83,7 @@ set(VERILATOR_EXTRA_ARGS -CFLAGS "-std=c++17")
 fi_add_verilated_sim(fi_integration_injection_wide_sim
   TRACE PUBLIC_FLAT_RW
   NO_MAIN FAULT_INJECTION
-  SOURCES ${WIDE_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/TestWorker.cpp
+  SOURCES ${WIDE_SOURCES}
   VERILATOR_EXTRA_ARGS ${VERILATOR_EXTRA_ARGS}
 )
 fi_add_sim_run(fi_integration_injection_wide_run

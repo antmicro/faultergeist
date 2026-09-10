@@ -20,11 +20,9 @@ fi_add_fault_campaign(fi_e2e_coverage_worker_json_campaign
   DEPENDS fi_e2e_coverage_worker_netlist "${SIMULATION_DIR}/config.json"
 )
 
-set(VERILATOR_EXTRA_ARGS -timescale-override 1fs/1fs)
 fi_add_verilated_sim(fi_e2e_coverage_worker_json_sim
   COVERAGE
   FAULT_INJECTION
-  VERILATOR_EXTRA_ARGS ${VERILATOR_EXTRA_ARGS}
 )
 
 fi_add_sim_run(fi_e2e_coverage_worker_json_run

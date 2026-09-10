@@ -52,3 +52,19 @@ PLI_DLLISPEC PLI_INT32 vpi_get(PLI_INT32, vpiHandle) {
 PLI_DLLISPEC PLI_INT32 vpi_vprintf(PLI_BYTE8* format, va_list ap) {
     return vfprintf(stderr, format, ap);
 }
+
+PLI_DLLISPEC vpiHandle vpi_handle(PLI_INT32, vpiHandle) {
+    UNEXPECTED_VPI_CALL();
+}
+
+PLI_DLLISPEC void vpi_get_value(vpiHandle, p_vpi_value) {
+    UNEXPECTED_VPI_CALL();
+}
+
+PLI_DLLISPEC vpiHandle vpi_handle_by_name(PLI_BYTE8*, vpiHandle) {
+    UNEXPECTED_VPI_CALL();
+}
+
+PLI_DLLISPEC vpiHandle vpi_handle_by_index(vpiHandle, PLI_INT32) {
+    UNEXPECTED_VPI_CALL();
+}

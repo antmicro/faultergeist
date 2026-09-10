@@ -35,8 +35,9 @@ jobs:
       - run: ccache --zero-stats
       - name: Build Verilator
         run: |
-          git clone https://github.com/verilator/verilator.git verilator -b master
+          git clone https://github.com/verilator/verilator.git verilator
           cd verilator
+          git checkout 0bad0faca667151e639445c31f61091e65847363
           git show -s
           autoconf
           ./configure --prefix="$PWD"

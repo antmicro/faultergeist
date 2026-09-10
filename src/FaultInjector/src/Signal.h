@@ -26,6 +26,10 @@ struct Signal {
     std::string path;
     ManagedVpiHandle vpi_handle;
     int vpi_width;
+    int range_min = 0;
+    int vpi_type = vpiReg;
+    bool is_unpacked_array = false;
+    int underlying_elem_size = 0;  // Size [in bits] of a single array element.
 
     vpiHandle handle() const { return vpi_handle.handle(); }
 };

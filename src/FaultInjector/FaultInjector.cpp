@@ -35,7 +35,7 @@ namespace fin {
 
 class FaultInjector {
     ManagedVpiHandle vh_value_cb;
-    EventParser eventParser;
+    EventParser event_parser;
 
     std::priority_queue<EventRollback> transient_events;
 
@@ -43,8 +43,8 @@ class FaultInjector {
 
    public:
     FaultInjector(const std::string& input_file)
-        : vh_value_cb{registerCb()}, eventParser{input_file} {
-        if (eventParser.ok()) {
+        : vh_value_cb{registerCb()}, event_parser{input_file} {
+        if (event_parser.ok()) {
             (void)simulateSingleEventEffects();
         } else {
             fin_fatal("%%Error: Couldn't parse '%s'\n", input_file.c_str());
@@ -127,9 +127,9 @@ class FaultInjector {
         auto t = getVpiTime();
         const std::uint64_t current_time = timeValue(t);
 
-        while (!eventParser.eof()) {
+        while (!event_parser.eof()) {
             if (!leftover_event) {
-                leftover_event = eventParser.parse();
+                leftover_event = event_parser.parse();
                 if (!leftover_event) {
                     continue;
                 }
@@ -164,23 +164,23 @@ class FaultInjector {
 
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
-        vpi_get_value(event.handle(), &vpi_value);
+        vpi_get_value(event.signal->handle(), &vpi_value);
         EventRollback transient{
             event.signal, event.time + 1 /*duration of transient effect*/, event.bit_idx, &vpi_value
         };
         fin_printf(
             const_cast<char*>("- [@%d] SET: saved copy of %.*s: %s\n"),
             time.low,
-            (int)event.sig_path().size(),
-            event.sig_path().data(),
+            (int)event.signal->path.size(),
+            event.signal->path.data(),
             vpiVectorToString(transient.vpi_value, event.signal->vpi_width).data()
         );
         fin_printf(
             const_cast<char*>("- [@%d] SET: before flipping %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
-            (int)event.sig_path().size(),
-            event.sig_path().data(),
+            (int)event.signal->path.size(),
+            event.signal->path.data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpiVectorToggleBit(vpi_value, event.bit_idx);
@@ -188,11 +188,11 @@ class FaultInjector {
             const_cast<char*>("- [@%d] SET: after flipping %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
-            (int)event.sig_path().size(),
-            event.sig_path().data(),
+            (int)event.signal->path.size(),
+            event.signal->path.data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_put_value(event.handle(), &vpi_value, nullptr, vpiForceFlag);
+        vpi_put_value(event.signal->handle(), &vpi_value, nullptr, vpiForceFlag);
 
         // Insert after all ops on event as insert invalidates it.
         transient_events.emplace(std::move(transient));
@@ -230,7 +230,7 @@ class FaultInjector {
 
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
-        vpi_get_value(event.handle(), &vpi_value);
+        vpi_get_value(event.signal->handle(), &vpi_value);
 
         fin_printf(
             const_cast<char*>("- [@%d] SEU: before flipping %d bit of %.*s: %s\n"),
@@ -249,7 +249,7 @@ class FaultInjector {
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_put_value(event.handle(), &vpi_value, nullptr, vpiNoDelay);
+        vpi_put_value(event.signal->handle(), &vpi_value, nullptr, vpiNoDelay);
     }
 
     static constexpr int VPI_VECTOR_WORD_SIZE =
