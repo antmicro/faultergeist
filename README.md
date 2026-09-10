@@ -20,6 +20,16 @@ To build the project, run:
 ./build.sh
 ```
 
+The workflow below uses an installed copy. Build it and choose an installation
+prefix:
+
+```sh
+cmake -S . -B build
+cmake --build build
+cmake --install build --prefix "$PWD/install"
+```
+To use the project without installing it, follow the source-tree workflow in [`example/run.sh`](example/run.sh).
+
 To build and run unit tests:
 
 ```sh
@@ -64,14 +74,17 @@ module top;
 endmodule
 ```
 
-4. Invoke verilation with FaultInjection sources and link with library.
+4. Invoke Verilator with the installed FaultInjection source and library.
 
 ```bash
 verilator \
     [... verilator flags ...] \
     --vpi --public-flat-rw \ # Enable VPI and expose signals for injection
     [... SV sources ...] \
-    faultergeist-inject.sv \ # Include FI library module
-    -LDFLAGS "-L$PATH_TO_FI_LIB_DIR -lfaultergeist-inject" \ # Link with FI library
+    $(pkg-config --libs faultergeist) \ # Include and link FI library
     -DFAULT_INJECTION_ENABLE # Enable FI
 ```
+
+The installed `faultergeist.pc` lets `pkg-config` locate the static library and
+SystemVerilog source. System installation prefixes are discovered automatically;
+set `PKG_CONFIG_PATH` as above for a custom prefix.

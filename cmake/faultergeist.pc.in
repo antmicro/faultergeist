@@ -1,0 +1,8 @@
+prefix=${pcfiledir}/@FAULTERGEIST_PC_PREFIX@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+datadir=${prefix}/@CMAKE_INSTALL_DATADIR@
+
+Name: Faultergeist
+Description: Fault injection support for Verilator
+Version: 0
+Libs: ${datadir}/faultergeist/faultergeist-inject.sv -LDFLAGS -L${libdir} --LDFLAGS -lfaultergeist-inject

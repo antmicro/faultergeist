@@ -2,46 +2,39 @@
 
 include(FetchContent)
 
+set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
+set(MP_UNITS_API_CONTRACTS NONE CACHE STRING "Enable contract checking" FORCE)
+
 FetchContent_Declare(
   json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG v3.12.0
+  EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(json)
-
 
 FetchContent_Declare(
-    absl
-    GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
-    GIT_TAG 20250512.0
+  absl
+  GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+  GIT_TAG 20250512.0
+  EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(absl)
 
-
-set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
 FetchContent_Declare(
   slang
   GIT_REPOSITORY https://github.com/MikePopoloski/slang.git
   GIT_TAG 0cc882855a21cc96e48847c64acd80d3bd5e02e1
+  EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(slang)
 
 FetchContent_Declare(
-    mp-units
-    GIT_REPOSITORY https://github.com/mpusz/mp-units.git
-    GIT_TAG v2.5.0
+  mp-units
+  GIT_REPOSITORY https://github.com/mpusz/mp-units.git
+  GIT_TAG v2.5.0
+  SOURCE_SUBDIR src
+  EXCLUDE_FROM_ALL
 )
-set(MP_UNITS_API_CONTRACTS NONE CACHE STRING "Enable contract checking" FORCE)
-FetchContent_GetProperties(mp-units)
-if(NOT mp-units_POPULATED)
-    FetchContent_Populate(mp-units)
 
-    add_subdirectory(
-        ${mp-units_SOURCE_DIR}/src
-        ${mp-units_BINARY_DIR}
-    )
-endif()
-
+FetchContent_MakeAvailable(json absl slang mp-units)
 
 if(BUILD_TESTING)
   FetchContent_Declare(
@@ -49,6 +42,7 @@ if(BUILD_TESTING)
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG        v1.15.2
     GIT_SHALLOW    TRUE
+    EXCLUDE_FROM_ALL
   )
   FetchContent_MakeAvailable(googletest)
 endif()

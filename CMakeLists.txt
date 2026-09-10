@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.28)
 
 project(Faultergeist LANGUAGES CXX)
 
@@ -23,6 +23,8 @@ endif()
 
 add_subdirectory(src/FaultGenerator)
 add_subdirectory(src/FaultInjector)
+
+include(cmake/install.cmake)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
