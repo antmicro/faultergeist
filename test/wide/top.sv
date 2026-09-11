@@ -14,8 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-module top;
+module top(output [254:1] in);
   reg [255:0] wide_reg = 0;
+  wire [255:0] wide_force/*verilator forceable*/;
+  assign wide_force[0] = 1;
+  assign wide_force[255] = 1;
+  assign wide_force[254:1] = in;
+
 `ifdef FAULT_INJECTION_ENABLE
   Faultergeist fi (`FAULT_INJECTION_CAMPAIGN_FILE);
 `endif

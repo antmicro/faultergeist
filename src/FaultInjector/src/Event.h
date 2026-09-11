@@ -31,11 +31,10 @@ namespace fin {
 struct Event {
     enum class Type : std::uint8_t {
         SingleEventTransientUpset,
-        SingleEventTransientRollback,
         SingleEventUpset,
     };
 
-    const Signal* signal;
+    const Signal* signal = nullptr;
     std::uint64_t time{};
     int bit_idx{};
     Type type{};

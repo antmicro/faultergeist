@@ -16,6 +16,7 @@
 
 #include "Event.h"
 #include "EventParser.h"
+#include "EventRollback.h"
 #include "ManagedVpiHandle.h"
 #include "Utils.h"
 
@@ -25,8 +26,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 #include <queue>
 #include <sstream>
@@ -38,7 +37,7 @@ class FaultInjector {
     ManagedVpiHandle vh_value_cb;
     EventParser eventParser;
 
-    std::priority_queue<Event> transient_events;
+    std::priority_queue<EventRollback> transient_events;
 
     std::optional<Event> leftover_event;
 
@@ -118,9 +117,6 @@ class FaultInjector {
             case Event::Type::SingleEventTransientUpset:
                 simulateSingleEventTransient(time, event);
                 break;
-            case Event::Type::SingleEventTransientRollback:
-                simulateSingleEventTransientRollback(time, event);
-                break;
             case Event::Type::SingleEventUpset:
                 simulateSingleEventUpset(time, event);
                 break;
@@ -149,7 +145,7 @@ class FaultInjector {
                 if (transient_events.top().time > current_time) {
                     return transient_events.top().time;
                 }
-                simulateSingleEventEffect(t, transient_events.top());
+                simulateSingleEventTransientRollback(t, transient_events.top());
                 transient_events.pop();
             }
         }
@@ -157,7 +153,7 @@ class FaultInjector {
             if (transient_events.top().time > current_time) {
                 return transient_events.top().time;
             }
-            simulateSingleEventEffect(t, transient_events.top());
+            simulateSingleEventTransientRollback(t, transient_events.top());
             transient_events.pop();
         }
         return 0;
@@ -167,75 +163,66 @@ class FaultInjector {
         fin_printf(const_cast<char*>("- [@%d] Simulating single-event transient\n"), time.low);
 
         s_vpi_value vpi_value{};
-        vpi_value.format = vpiIntVal;
+        vpi_value.format = vpiVectorVal;
         vpi_get_value(event.handle(), &vpi_value);
-        auto transient_event = Event{
-            .signal = event.signal,
-            .time = event.time + 1 /*duration of transient effect*/,
-            .bit_idx = event.bit_idx,
-            .type = Event::Type::SingleEventTransientRollback,
-            .vpi_value = vpi_value,
+        EventRollback transient{
+            event.signal, event.time + 1 /*duration of transient effect*/, event.bit_idx, &vpi_value
         };
         fin_printf(
-            const_cast<char*>("- [@%d] SET: before flipping %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SET: saved copy of %.*s: %s\n"),
             time.low,
-            event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(transient.vpi_value, event.signal->vpi_width).data()
         );
-        vpi_value.value.integer ^= 1 << event.bit_idx;
         fin_printf(
-            const_cast<char*>("- [@%d] SET: after flipping %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SET: before flipping %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
+        );
+        vpiVectorToggleBit(vpi_value, event.bit_idx);
+        fin_printf(
+            const_cast<char*>("- [@%d] SET: after flipping %d bit of %.*s: %s\n"),
+            time.low,
+            event.bit_idx,
+            (int)event.sig_path().size(),
+            event.sig_path().data(),
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiForceFlag);
 
         // Insert after all ops on event as insert invalidates it.
-        transient_events.push(std::move(transient_event));
+        transient_events.emplace(std::move(transient));
     }
 
-    void simulateSingleEventTransientRollback(const s_vpi_time& time, const Event& event) {
+    void simulateSingleEventTransientRollback(const s_vpi_time& time, const EventRollback& event) {
         fin_printf(const_cast<char*>("- [@%d] Rollback single-event transient\n"), time.low);
-        assert(event.vpi_value.has_value());
 
         s_vpi_value vpi_value{};
-        vpi_value.format = vpiIntVal;
+        vpi_value.format = vpiVectorVal;
         vpi_get_value(event.handle(), &vpi_value);
 
         fin_printf(
-            const_cast<char*>("- [@%d] SET: before rollback %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SET: before rollback %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_value = event.vpi_value.value();
+        vpi_value = event.vpi_value;
         fin_printf(
-            const_cast<char*>("- [@%d] SET: after rollback %d bit of %.*s: %d\n"),
+            const_cast<char*>("- [@%d] SET: after rollback %d bit of %.*s: %s\n"),
             time.low,
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpi_value.value.integer
+            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiReleaseFlag);
-    }
-
-    std::string vpiVectorToString(s_vpi_value vpi_value, int vpi_size) {
-        std::stringstream ss;
-        constexpr int word_size =
-            std::numeric_limits<decltype(vpi_value.value.vector->aval)>::digits;
-        for (int i = std::max(vpi_size / word_size - 1, 0); i >= 0; --i) {
-            std::bitset<word_size> word(vpi_value.value.vector[i].aval);
-            ss << word.to_string();
-        }
-        return ss.str();
     }
 
     void simulateSingleEventUpset(const s_vpi_time& time, const Event& event) {
@@ -253,7 +240,7 @@ class FaultInjector {
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_value.value.vector[event.bit_idx / 32].aval ^= 1 << (event.bit_idx % 32);
+        vpiVectorToggleBit(vpi_value, event.bit_idx);
         fin_printf(
             const_cast<char*>("- [@%d] SEU: after flipping %d bit of %.*s: %s\n"),
             time.low,
@@ -263,6 +250,25 @@ class FaultInjector {
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiNoDelay);
+    }
+
+    static constexpr int VPI_VECTOR_WORD_SIZE =
+        std::numeric_limits<decltype(s_vpi_value::value.vector->aval)>::digits;
+    // IEEE 1800-2023 K.2 Source code
+    static_assert(VPI_VECTOR_WORD_SIZE == 32);
+
+    static void vpiVectorToggleBit(s_vpi_value& vpi_value, int bit_idx) {
+        vpi_value.value.vector[bit_idx / VPI_VECTOR_WORD_SIZE].aval ^=
+            1 << (bit_idx % VPI_VECTOR_WORD_SIZE);
+    }
+
+    static std::string vpiVectorToString(s_vpi_value vpi_value, int vpi_width) {
+        std::stringstream ss;
+        for (int i = std::max(vpi_width / VPI_VECTOR_WORD_SIZE - 1, 0); i >= 0; --i) {
+            std::bitset<VPI_VECTOR_WORD_SIZE> word(vpi_value.value.vector[i].aval);
+            ss << word.to_string();
+        }
+        return ss.str();
     }
 
     static s_vpi_time getVpiTime() {
