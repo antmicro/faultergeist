@@ -17,11 +17,10 @@
 #include "EventParser.h"
 
 #include "Event.h"
-#include "ManagedVpiHandle.h"
 #include "Signal.h"
+#include "SignalCollector.h"
 #include "Utils.h"
 
-#include <algorithm>
 #include <cassert>
 #include <charconv>
 #include <cmath>
@@ -29,81 +28,6 @@
 #include <string>
 
 #include "vpi_user.h"
-
-namespace {
-
-void fin_indent(int indent_size) {
-    for (int i = 0; i < indent_size; ++i) {
-        fin_printf(const_cast<char*>("\t"));
-    }
-}
-
-struct VPISignalInfo {
-    VPISignalInfo(vpiHandle signal_handle);
-
-    const char* path = nullptr;
-    int vpi_type = vpiUndefined;
-    int vpi_width = vpiUndefined;
-};
-
-VPISignalInfo::VPISignalInfo(vpiHandle signal_handle)
-    : path{vpi_get_str(vpiFullName, signal_handle)},
-      vpi_type{vpi_get(vpiType, signal_handle)},
-      vpi_width{vpi_get(vpiSize, signal_handle)} {}
-
-struct VPIRange {
-    VPIRange(vpiHandle signal_handle);
-
-    bool valid() const { return left >= 0 && right >= 0; }
-
-    int left = -1;
-    int right = -1;
-};
-
-VPIRange::VPIRange(vpiHandle signal_handle) {
-    fin::ManagedVpiHandle left_range_handle = vpi_handle(vpiLeftRange, signal_handle);
-    fin::ManagedVpiHandle right_range_handle = vpi_handle(vpiRightRange, signal_handle);
-    if (!left_range_handle || !right_range_handle) {
-        return;
-    }
-
-    s_vpi_value range_value{};
-    range_value.format = vpiIntVal;
-    vpi_get_value(left_range_handle.handle(), &range_value);
-    left = range_value.value.integer;
-    vpi_get_value(right_range_handle.handle(), &range_value);
-    right = range_value.value.integer;
-}
-
-int findRangeMin(vpiHandle signal_handle, int vpi_type, int vpi_width) {
-    if (vpi_type != vpiReg) {
-        return 0;
-    }
-
-    const VPIRange range = VPIRange(signal_handle);
-    if (!range.valid()) {
-        return 0;
-    }
-
-    // If range size doesn't match vpi size, e.g. in case of packed arrays, fallback to min range
-    // equal to 0.
-    const int range_size =
-        std::max(range.left, range.right) - std::min(range.left, range.right) + 1;
-    return range_size == vpi_width ? std::min(range.left, range.right) : 0;
-}
-
-const char* vpiTypeToString(int vpi_type) {
-    switch (vpi_type) {
-        case vpiReg:
-            return "vpiReg";
-        case vpiRegArray:
-            return "vpiRegArray";
-        default:
-            return "unknown";
-    }
-}
-
-}  // namespace
 
 namespace fin {
 
@@ -113,8 +37,8 @@ constexpr int FEMTOSECONDS_TIME_PRECISION = -15;
 
 EventParser::EventParser(const std::filesystem::path& scenario_filepath)
     : scenario(scenario_filepath) {
-    vpiHandle vhi = vpi_iterate(vpiModule, nullptr);
-    gatherSignals(vhi, 0);
+    SignalCollector signal_collector(signals);
+    signal_collector.collect(/*handle=*/nullptr);
     time_multiplier =
         std::pow(10.0, FEMTOSECONDS_TIME_PRECISION - vpi_get(vpiTimePrecision, nullptr));
     if (!scenario) {
@@ -135,170 +59,40 @@ bool EventParser::ok() const {
     return scenario.operator bool();
 }
 
-void EventParser::gatherSignals(vpiHandle it, int indent) {
-    while (ManagedVpiHandle scope_handle = vpi_scan(it)) {
-        const char* scope_name = vpi_get_str(vpiName, scope_handle.handle());
-        fin_indent(indent);
-        fin_printf(const_cast<char*>("scope '%s'\n"), scope_name);
-
-        vpiHandle signal_iter = vpi_iterate(vpiReg, scope_handle.handle());
-        assert(signal_iter);
-        while (auto* signal_handle = vpi_scan(signal_iter)) {
-            auto [fn, vpi_type, vpi_width] = VPISignalInfo(signal_handle);
-
-            if (vpi_width == 0) {
-                fin_printf("%%Error: Failed discover signal '%s' of width %d\n", fn, vpi_width);
-                fin_printf("Ignoring the signal\n");
-                continue;
-            }
-
-            const int range_min = findRangeMin(signal_handle, vpi_type, vpi_width);
-
-            switch (vpi_type) {
-                case vpiRegArray:
-                    gatherArraySignals(signal_handle, fn, vpi_type, vpi_width, indent + 1);
-                    break;
-                case vpiReg:
-                    fin_indent(indent + 1);
-                    fin_printf(
-                        "reg '%s, width: %d, type: %s'\n", fn, vpi_width, vpiTypeToString(vpi_type)
-                    );
-                    insertSignal(Signal{
-                        .path = std::string{fn},
-                        .vpi_handle = ManagedVpiHandle{signal_handle},
-                        .vpi_width = vpi_width,
-                        .range_min = range_min,
-                        .vpi_type = vpi_type
-                    });
-                    break;
-                default:
-                    // vpiReg iteration can also return non-bit-vector variables
-                    // (for example, the injector instance's string parameter).
-                    // They cannot be targets for bit-level fault injection.
-                    fin_printf("Ignoring signal '%s' of unsupported vpi type %d\n", fn, vpi_type);
-                    vpi_release_handle(signal_handle);
-                    break;
-            }
-        }
-        if (vpiHandle scope_it = vpi_iterate(vpiInternalScope, scope_handle.handle())) {
-            gatherSignals(scope_it, indent + 1);
-        }
-    }
-}
-
-void EventParser::gatherArraySignals(
-    vpiHandle array_handle,
-    const char* array_signal_name,
-    int array_vpi_type,
-    int array_vpi_width,
-    int indent_size
-) {
-    fin_indent(indent_size);
-    fin_printf(
-        "array '%s, size: %d, type: %s'\n",
-        array_signal_name,
-        array_vpi_width,
-        vpiTypeToString(array_vpi_type)
-    );
-    const VPIRange array_range = VPIRange(array_handle);
-    int first_index = 0;
-    int last_index = array_vpi_width;
-    if (array_range.valid()) {
-        first_index = std::min(array_range.left, array_range.right);
-        last_index = std::max(array_range.left, array_range.right);
-    }
-    int underlying_elem_size = 0;
-    for (int current_index = first_index; current_index <= last_index; ++current_index) {
-        std::string elem_name =
-            std::string{array_signal_name} + '[' + std::to_string(current_index) + ']';
-        vpiHandle elem_handle = vpi_handle_by_index(array_handle, current_index);
-        assert(elem_handle != nullptr);
-        int vpi_elem_type = vpi_get(vpiType, elem_handle);
-        int vpi_elem_size = vpi_get(vpiSize, elem_handle);
-
-        if (vpi_elem_size == 0) {
-            fin_printf(
-                "%%Error: Failed discover signal '%s' of width %d\n",
-                elem_name.c_str(),
-                vpi_elem_size
-            );
-            fin_printf("Ignoring the signal\n");
-            continue;
-        }
-
-        const int range_min = findRangeMin(elem_handle, vpi_elem_type, vpi_elem_size);
-
-        switch (vpi_elem_type) {
-            case vpiRegArray: {
-                gatherArraySignals(
-                    elem_handle, elem_name.c_str(), vpi_elem_type, vpi_elem_size, indent_size + 1
-                );
-                const Signal* elem_signal = signal(elem_name);
-                assert(elem_signal);
-                underlying_elem_size = elem_signal->vpi_width * elem_signal->underlying_elem_size;
-                break;
-            }
-            case vpiReg: {
-                underlying_elem_size = vpi_elem_size;
-                fin_indent(indent_size + 1);
-
-                fin_printf(
-                    "reg '%s, width: %d, type: %s'\n",
-                    elem_name.c_str(),
-                    vpi_elem_size,
-                    vpiTypeToString(vpi_elem_type)
-                );
-                insertSignal(Signal{
-                    .path = elem_name,
-                    .vpi_handle = ManagedVpiHandle{elem_handle},
-                    .vpi_width = vpi_elem_size,
-                    .range_min = range_min,
-                    .vpi_type = vpi_elem_type
-                });
-                break;
-            }
-            default:
-                fin_fatal("Unhandled vpi type %d\n", vpi_elem_type);
-        }
-    }
-    insertSignal(Signal{
-        .path = std::string{array_signal_name},
-        .vpi_handle = ManagedVpiHandle{array_handle},
-        .vpi_width = array_vpi_width,
-        .range_min = first_index,
-        .vpi_type = array_vpi_type,
-        .is_unpacked_array = true,
-        .underlying_elem_size = underlying_elem_size
-    });
-}
-
-void EventParser::insertSignal(Signal signal) {
-    // To avoid copying strings throughout the probram, where it is not necessary
-    // we use map with string_view as keys. So that keys are not dangling pointers,
-    // mapped value is the owner of signal_path.
-    // This function is to juggle these pointers so that they are pointing correctly.
-    auto [it, _] = signals.emplace(std::string_view{}, std::move(signal));
-    auto node = signals.extract(it);
-    node.key() = node.mapped().path;
-    signals.insert(std::move(node));
-}
-
 std::pair<const fin::Signal*, int> EventParser::resolveSignal(
     const fin::Signal& signal_to_resolve,
     int index
 ) {
-    if (signal_to_resolve.is_unpacked_array) {
+    if (signal_to_resolve.isArray()) {
         std::string elem_name =
             signal_to_resolve.path + '[' +
             std::to_string(
                 signal_to_resolve.range_min + index / signal_to_resolve.underlying_elem_size
             ) +
             ']';
-        const fin::Signal* elem = signal(elem_name);
+        const Signal* elem = signal(elem_name);
         if (!elem) {
             fin_fatal("Cannot find array element %s!\n", elem_name.c_str());
         }
         return resolveSignal(*elem, index % signal_to_resolve.underlying_elem_size);
+    }
+    if (signal_to_resolve.isStruct()) {
+        if (index < 0 || index >= signal_to_resolve.vpi_width) {
+            fin_fatal("Bit index is outside struct %s!\n", signal_to_resolve.path.c_str());
+        }
+        for (const auto& member : signal_to_resolve.struct_members) {
+            if (index < member.size) {
+                const Signal* member_signal = signal(member.name);
+                if (!member_signal) {
+                    fin_fatal("Cannot find struct member %s!\n", member.name.c_str());
+                }
+                return resolveSignal(*member_signal, index);
+            }
+            index -= member.size;
+        }
+        fin_fatal(
+            "Bit index did not match any %s struct member!\n", signal_to_resolve.path.c_str()
+        );
     }
     return {&signal_to_resolve, index};
 }
@@ -374,7 +168,7 @@ std::optional<Event> EventParser::parse(std::string_view line) {
     // Take LSB into account as fault generator doesn't have the data about real signal scope,
     // because signals are broken down into separate bits during synthesis.
     int adjusted_bit_idx =
-        resolved_bit_idx - (it->second.is_unpacked_array ? 0 : resolved_signal->range_min);
+        resolved_bit_idx - (it->second.isArray() ? 0 : resolved_signal->range_min);
 
     return Event{
         .signal = resolved_signal,

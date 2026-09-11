@@ -16,6 +16,7 @@
 
 #include "Event.h"
 #include "EventParser.h"
+#include "SignalCollector.h"
 
 #include <gtest/gtest.h>
 
@@ -25,10 +26,16 @@ class EventParserTester : public fin::EventParser {
    public:
     EventParserTester(double multiplier = 1.0) {
         time_multiplier = multiplier;
-        insertSignal({"TOP.test_signal", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
-        insertSignal({"TOP.another_sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
-        insertSignal({"TOP.sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
-        insertSignal({"TOP.custom_sig", /*vpi_handle=*/nullptr, /*vpi_size=*/32, /*range_min=*/16});
+        fin::SignalCollector signal_collector(signals);
+        signal_collector.insertSignal({"TOP.test_signal", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        signal_collector.insertSignal({"TOP.another_sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        signal_collector.insertSignal({"TOP.sig", /*vpi_handle=*/nullptr, /*vpi_size=*/0});
+        signal_collector.insertSignal(
+            {"TOP.custom_sig",
+             /*vpi_handle=*/nullptr,
+             /*vpi_size=*/32,
+             /*range_min=*/16}
+        );
     }
 
     std::optional<fin::Event> parse_line(std::string_view line) { return parse(line); }

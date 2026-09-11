@@ -110,7 +110,7 @@ check-formatting:
     - cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_FLAGS=-stdlib=libc++ -DENABLE_WEXTRA=ON
   script:
     - echo "Checking formatting..."
-    - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format --dry-run --Werror
+    - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' ! -name 'sv_vpi_user.h' -print0 | xargs -0 clang-format --dry-run --Werror
 
 run-example:
   <<: *build-setup

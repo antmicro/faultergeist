@@ -21,6 +21,23 @@
 #include <cstdlib>
 
 [[maybe_unused]]
+static void fin_indent(int indent_size) {
+    va_list ap;
+    for (int i = 0; i < indent_size; ++i) {
+        vpi_vprintf(const_cast<char*>("\t"), ap);
+    }
+}
+
+[[maybe_unused]]
+static void fin_printf(int indent, const char* formatp, ...) {
+    fin_indent(indent);
+    va_list ap;
+    va_start(ap, formatp);
+    vpi_vprintf(const_cast<char*>(formatp), ap);
+    va_end(ap);
+}
+
+[[maybe_unused]]
 static void fin_printf(const char* formatp, ...) {
     va_list ap;
     va_start(ap, formatp);

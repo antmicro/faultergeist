@@ -219,6 +219,7 @@ TEST(FaultEventsSignalFormatter, SignalsWithHdlname) {
         createSignal("top.worker", "resp[18]", 1, "worker resp$dff"),
         createSignal("top.worker", "resp[21]", 1, "worker resp$dff"),
         createSignal("top.worker", "resp[26]", 1, "worker resp$dff"),
+        createSignal("top.worker", "counter\\[123\\][26]", 1, "worker counter\\[123\\][31:26]$dff"),
     };
 
     const std::vector<FaultEvent> pre_synth_events = {
@@ -232,6 +233,7 @@ TEST(FaultEventsSignalFormatter, SignalsWithHdlname) {
         createFromSignal(pre_synth_signals, 1, 8, 1),
         createFromSignal(pre_synth_signals, 0, 8, 0),
         createFromSignal(pre_synth_signals, 0, 10, 24),
+        createFromSignal(pre_synth_signals, 0, 10, 26),
     };
     const std::vector<FaultEvent> post_synth_events = {
         createFromSignal(post_synth_signals, 1, 1, 0),
@@ -244,6 +246,7 @@ TEST(FaultEventsSignalFormatter, SignalsWithHdlname) {
         createFromSignal(post_synth_signals, 5, 8, 0),
         createFromSignal(post_synth_signals, 0, 8, 0),
         createFromSignal(post_synth_signals, 3, 10, 0),
+        createFromSignal(post_synth_signals, 10, 10, 0),
     };
 
     const std::string_view prefix_path = "top";

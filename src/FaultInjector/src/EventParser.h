@@ -39,7 +39,6 @@ class EventParser {
 
     EventParser() = default;
     std::optional<Event> parse(std::string_view);
-    void insertSignal(Signal);
 
    public:
     EventParser(const std::filesystem::path&);
@@ -48,21 +47,12 @@ class EventParser {
     bool eof() const;
     bool ok() const;
 
-    const Signal* signal(std::string_view name) const;
-
    private:
-    void gatherSignals(vpiHandle, int);
-    void gatherArraySignals(
-        vpiHandle array_handle,
-        const char* array_signal_name,
-        int array_vpi_type,
-        int array_vpi_size,
-        int print_indent
-    );
     std::pair<const fin::Signal*, int> resolveSignal(
         const fin::Signal& signal_to_resolve,
         int index
     );
+    const Signal* signal(std::string_view name) const;
     std::nullopt_t printFailedToParseLineError();
 };
 

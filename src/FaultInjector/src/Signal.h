@@ -19,8 +19,16 @@
 #include "ManagedVpiHandle.h"
 
 #include <string>
+#include <vector>
+
+#include "sv_vpi_user.h"
 
 namespace fin {
+
+struct StructMember {
+    std::string name;
+    int size;
+};
 
 struct Signal {
     std::string path;
@@ -28,10 +36,12 @@ struct Signal {
     int vpi_width;
     int range_min = 0;
     int vpi_type = vpiReg;
-    bool is_unpacked_array = false;
     int underlying_elem_size = 0;  // Size [in bits] of a single array element.
+    std::vector<StructMember> struct_members{};
 
     vpiHandle handle() const { return vpi_handle.handle(); }
+    bool isArray() const { return vpi_type == vpiRegArray; }
+    bool isStruct() const { return vpi_type == vpiStructVar; }
 };
 
 }  // namespace fin
