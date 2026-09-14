@@ -39,4 +39,5 @@ endif()
 add_dependencies(fi_e2e_veer_basic_netlist "${FI_E2E_VEER_SETUP_TARGET}")
 
 add_subdirectory(baseline)
+add_subdirectory(coverage)
 add_subdirectory(random)

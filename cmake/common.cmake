@@ -567,7 +567,7 @@ function(fi_add_fault_campaign NAME)
 endfunction()
 
 # fi_add_verilated_sim(<target>
-#   [FAULT_INJECTION] [TRACE] [NO_MAIN] [NO_BUILD] [VEER_MODE]
+#   [FAULT_INJECTION] [TRACE] [NO_MAIN] [NO_BUILD] [VEER_MODE] [NO_ASSERT]
 #   [CAMPAIGN_FILE <path>] [WORK_DIR <dir>] [SIMULATION_DIR <dir>]
 #   [TB_TOP <name>] [VCD_OUTPUT_PATH <path>] [VLT_CONFIG <path>]
 #   [SOURCES <files...>] [DEPENDS <deps...>]
@@ -584,6 +584,8 @@ endfunction()
 #                     from VCD_OUTPUT_PATH. Defaults to vlt_dump.vcd.
 #   VLT_CONFIG        Verilator signal configuration. Defaults to
 #                     ${SIMULATION_DIR}/flat_signals.vlt.
+#   PUBLIC_FLAT_RW    Use `--public-flat-rw` instead of VLT_CONFIG
+#   NO_ASSERT         Disable assertions in simulation
 #
 # Common Verilator flags:
 #   --vpi --Mdir <SIMULATION_DIR> --prefix <TB_TOP>
@@ -608,7 +610,7 @@ endfunction()
 # Output:
 #   ${SIMULATION_DIR}/${TB_TOP} is exposed as <target>_EXECUTABLE in parent scope.
 function(fi_add_verilated_sim NAME)
-  set(options COVERAGE FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE PUBLIC_FLAT_RW)
+  set(options COVERAGE FAULT_INJECTION TRACE NO_MAIN NO_BUILD VEER_MODE PUBLIC_FLAT_RW NO_ASSERT)
   set(one_value_args CAMPAIGN_FILE WORK_DIR SIMULATION_DIR TB_TOP VCD_OUTPUT_PATH VLT_CONFIG)
   set(multi_value_args SOURCES DEPENDS VERILATOR_EXTRA_ARGS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -648,7 +650,10 @@ function(fi_add_verilated_sim NAME)
     endif()
   endif()
   if (FI_COVERAGE)
-    list(APPEND _args --coverage-toggle)
+    list(APPEND _args "--coverage-toggle")
+  endif()
+  if (FI_NO_ASSERT)
+    list(APPEND _args "--no-assert")
   endif()
   if(FI_VERILATOR_EXTRA_ARGS)
     list(APPEND _args ${FI_VERILATOR_EXTRA_ARGS})

@@ -30,18 +30,19 @@ diff --git a/testbench/test_tb_top.cpp b/testbench/test_tb_top.cpp
 index e5622a3..3a51cb8 100644
 --- a/testbench/test_tb_top.cpp
 +++ b/testbench/test_tb_top.cpp
-@@ -22,7 +22,10 @@
+@@ -22,7 +22,11 @@
  #include "Vtb_top.h"
  #include "verilated.h"
  #include "verilated_vcd_c.h"
 +#include "verilated_vpi.h"
++#include "verilated_cov.h"
  
 +// User VPI code adds to this array to get startup main() callbacks
 +extern "C" void (*vlog_startup_routines[])() VL_ATTR_WEAK;
  
  vluint64_t main_time = 0;
  
-@@ -76,6 +79,12 @@ int main(int argc, char** argv) {
+@@ -76,6 +80,12 @@ int main(int argc, char** argv) {
  
    std::map<std::string, uint64_t> symbols;
  
@@ -54,7 +55,7 @@ index e5622a3..3a51cb8 100644
    // Setup memory signature range by looking up symbol names in the provided
    // symbol dump file
    for (int i=1; i<argc; ++i) {
-@@ -157,7 +166,17 @@ int main(int argc, char** argv) {
+@@ -157,7 +167,17 @@ int main(int argc, char** argv) {
    for (int i=0;i<6;i++) {
      main_time += 5;
      tb->core_clk = !tb->core_clk;
@@ -72,7 +73,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -172,7 +191,17 @@ int main(int argc, char** argv) {
+@@ -172,7 +192,17 @@ int main(int argc, char** argv) {
      while(!tb->o_cpu_halt_ack) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -90,7 +91,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -182,7 +211,17 @@ int main(int argc, char** argv) {
+@@ -182,7 +212,17 @@ int main(int argc, char** argv) {
      while(!tb->o_cpu_halt_status) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -108,7 +109,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -193,7 +232,17 @@ int main(int argc, char** argv) {
+@@ -193,7 +233,17 @@ int main(int argc, char** argv) {
      while(!tb->o_cpu_run_ack) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -126,7 +127,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -204,7 +253,17 @@ int main(int argc, char** argv) {
+@@ -204,7 +254,17 @@ int main(int argc, char** argv) {
      while(tb->o_cpu_halt_status) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -144,7 +145,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -216,7 +275,17 @@ int main(int argc, char** argv) {
+@@ -216,7 +276,17 @@ int main(int argc, char** argv) {
      while(!tb->mpc_debug_halt_ack) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -162,7 +163,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -226,7 +295,17 @@ int main(int argc, char** argv) {
+@@ -226,7 +296,17 @@ int main(int argc, char** argv) {
      while(!tb->o_debug_mode_status) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -180,7 +181,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -237,7 +316,17 @@ int main(int argc, char** argv) {
+@@ -237,7 +317,17 @@ int main(int argc, char** argv) {
      while(!tb->mpc_debug_run_ack) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -198,7 +199,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -248,7 +337,17 @@ int main(int argc, char** argv) {
+@@ -248,7 +338,17 @@ int main(int argc, char** argv) {
      while(tb->o_debug_mode_status) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -216,7 +217,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -267,7 +366,17 @@ int main(int argc, char** argv) {
+@@ -267,7 +367,17 @@ int main(int argc, char** argv) {
        for(int j=0;j<10;j++) {
          main_time += 5;
          tb->core_clk = !tb->core_clk;
@@ -234,7 +235,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -282,7 +391,17 @@ int main(int argc, char** argv) {
+@@ -282,7 +392,17 @@ int main(int argc, char** argv) {
      for (int i=0;i<30;i++) {
        main_time += 5;
        tb->core_clk = !tb->core_clk;
@@ -252,7 +253,7 @@ index e5622a3..3a51cb8 100644
  #if VM_TRACE
        tfp->dump (main_time);
  #endif
-@@ -296,9 +415,20 @@ int main(int argc, char** argv) {
+@@ -296,9 +416,20 @@ int main(int argc, char** argv) {
  #endif
        main_time += 5;
        tb->core_clk = !tb->core_clk;
