@@ -45,8 +45,8 @@ prepare-verilator:
   script:
     - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${VERILATOR_URL}" "$VERILATOR_ROOT"
     - cd verilator
-    # Latest as of 13.09.2026
-    - git checkout 0bad0faca667151e639445c31f61091e65847363
+    # Latest as of 21.09.2026
+    - git checkout 46774fded9a960ca5f5110d6ff099e73fe08f86c
     - git show -s
     - autoconf
     - ./configure --prefix=`pwd`
