@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <queue>
 #include <sstream>
@@ -40,10 +41,13 @@ class FaultInjector {
     std::priority_queue<EventRollback> transient_events;
 
     std::optional<Event> leftover_event;
+    bool coverage_testing = false;
 
    public:
     FaultInjector(const std::string& input_file)
-        : vh_value_cb{registerCb()}, event_parser{input_file} {
+        : vh_value_cb{registerCb()},
+          event_parser{input_file},
+          coverage_testing{checkCoverageTesting()} {
         if (event_parser.ok()) {
             (void)simulateSingleEventEffects();
         } else {
@@ -57,6 +61,7 @@ class FaultInjector {
     FaultInjector& operator=(const FaultInjector&) = delete;
 
    private:
+    static bool checkCoverageTesting() { return std::getenv("FI_COVERAGE_TESTING") != nullptr; }
     ManagedVpiHandle registerCb() {
         fin_printf("- Registering cbNextSimTime callback\n");
 
@@ -223,6 +228,18 @@ class FaultInjector {
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiReleaseFlag);
+
+#ifndef NDEBUG
+        if (coverage_testing) {
+            // Release only disables the force. Verilator leaves a signal without a
+            // continuous driver at its forced value until its next assignment, so
+            // restore the value saved before the transient explicitly. A continuous
+            // driver will recompute its value on the next model evaluation. Keep the
+            // saved value separate because vpiReleaseFlag writes through its value argument.
+            s_vpi_value restored_value = event.vpi_value;
+            vpi_put_value(event.handle(), &restored_value, nullptr, vpiNoDelay);
+        }
+#endif
     }
 
     void simulateSingleEventUpset(const s_vpi_time& time, const Event& event) {

@@ -182,7 +182,13 @@ int main(int argc, char* argv[]) {
             .collectFromFile(opts.netlist_path);
 
     if (opts.vlt_config) {
-        VltConfigWriter::write(*opts.vlt_config, signals);
+        VltConfigWriter{
+            *opts.vlt_config,
+            signals,
+            opts.strategy->config.all_generate_forceable,
+            opts.strategy->config.all_generate_public_flat_rw,
+        }
+            .write();
     }
 
     generate_campaigns(opts, signals);

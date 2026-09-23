@@ -386,74 +386,11 @@ function(fi_add_yosys_json NAME)
   add_dependencies("${NAME}" "${FI_E2E_TOOLS_TARGET}")
 endfunction()
 
-# fi_configure_file(<input> [OUTPUT <path>] [SIMULATION_DIR <dir>]
-#                   [DEPENDS <files>...])
-#
-# Configures <input> at build time with @ONLY substitution on forwarded variables.
-#
-# Required:
-#   input              Template file.
-#
-# Optional/implicit:
-#   OUTPUT            Configured output file. Defaults to
-#                     ${SIMULATION_DIR}/config.json.
-#   SIMULATION_DIR    May be explicit, come from SIMULATION_DIR, or default to
-#                     ${WORK_DIR}/obj_dir.
-#   Forwarded variables:
-#                     DESIGN_TOP, JSON_NETLIST, NETLIST_PATH,
-#                     FAULT_CAMPAIGN_OUT, CAMPAIGN_DIR, FI_E2E_JOBS.
-function(fi_configure_file INPUT)
-  set(options)
-  set(one_value_args OUTPUT SIMULATION_DIR)
-  set(multi_value_args EXT_LIB_FILES DEPENDS)
-  cmake_parse_arguments(FI "" "${one_value_args}" "${multi_value_args}" ${ARGN})
-
-  _fi_resolve_implicit_arg_with_default(SIMULATION_DIR "${FI_E2E_VERILATOR_OUTPUT_DIR_DEFAULT_FILENAME}" WORK_DIR)
-  _fi_resolve_implicit_arg_with_default(OUTPUT "${FI_E2E_FAULTGEN_CONFIG_DEFAULT_FILENAME}" FI_SIMULATION_DIR)
-  _fi_resolve_implicit_arg_with_default(JSON_NETLIST "${FI_E2E_JSON_NETLIST_DEFAULT_FILENAME}" WORK_DIR)
-  _fi_default_arg(FI_EXT_LIB_FILES LIB_FILES)
-
-
-  set(_fi_configure_defs)
-  # Variables forwarded to configure_file_at_build.cmake for @ONLY substitution.
-  foreach(_fi_var DESIGN_TOP JSON_NETLIST VERILOG_NETLIST NETLIST_PATH FAULT_CAMPAIGN_OUT CAMPAIGN_DIR FI_E2E_JOBS)
-    set(_fi_arg_var "FI_${_fi_var}")
-    if(DEFINED ${_fi_arg_var} AND NOT "${${_fi_arg_var}}" STREQUAL "")
-      list(APPEND _fi_configure_defs "-D${_fi_var}=${${_fi_arg_var}}")
-    elseif(DEFINED ${_fi_var})
-      list(APPEND _fi_configure_defs "-D${_fi_var}=${${_fi_var}}")
-    else()
-      get_directory_property(_fi_value DEFINITION ${_fi_var})
-      if(NOT "${_fi_value}" STREQUAL "")
-        list(APPEND _fi_configure_defs "-D${_fi_var}=${_fi_value}")
-      endif()
-    endif()
-  endforeach()
-
-  set(_depends "${INPUT}" "${FI_E2E_SCRIPT_DIR}/configure_file_at_build.cmake" ${FI_DEPENDS})
-
-  get_filename_component(_output_dir "${FI_OUTPUT}" DIRECTORY)
-
-  string(JOIN "\", \"" LIB_FILES_STR ${FI_EXT_LIB_FILES})
-  add_custom_command(
-    OUTPUT "${FI_OUTPUT}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${_output_dir}"
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DFI_INPUT=${INPUT}"
-      "-DFI_OUTPUT=${FI_OUTPUT}"
-      ${_fi_configure_defs}
-      -DLIB_FILES="${LIB_FILES_STR}"
-      -P "${FI_E2E_SCRIPT_DIR}/configure_file_at_build.cmake"
-    DEPENDS ${_depends}
-    VERBATIM
-  )
-endfunction()
-
 # fi_add_fault_campaign(<target>
-#   [ALLOW_EMPTY] [OUTPUT <path>] [CONFIG <path> | CONFIG_FILE <path>]
+#   [ALLOW_EMPTY] [NO_VLT_CONFIG] [EXTRA_DEBUG]
+#   [CONFIG_TEMPLATE <template.json.in>] [OUTPUT <path>]
 #   [WORK_DIR <dir>] [SIMULATION_DIR <dir>]
-#   [ARGS <args...>] [DEPENDS <deps...>])
+#   [ARGS <args...>] [DEPENDS <deps...>] [EXT_LIB_FILES <files...>])
 #
 # Generates a fault campaign with faultergeist-gen.
 #
@@ -462,16 +399,19 @@ endfunction()
 #   SIMULATION_DIR   Per-run output directory. Defaults to ${WORK_DIR}/obj_dir.
 #
 # Optional/implicit:
+#   CONFIG_TEMPLATE   .json.in template. Rendered at configure time with @ONLY
+#                     substitution into ${SIMULATION_DIR}/config.json, which is
+#                     passed to faultergeist-gen as --config_file. Substitutes
+#                     DESIGN_TOP, JSON_NETLIST, VERILOG_NETLIST, NETLIST_PATH,
+#                     FAULT_CAMPAIGN_OUT, CAMPAIGN_DIR, FI_E2E_JOBS, LIB_FILES.
+#   EXT_LIB_FILES     Liberty paths joined into the LIB_FILES @-substitution
+#                     as "path1", "path2", ....
 #   OUTPUT            CMake-tracked output. Defaults to FAULT_CAMPAIGN_OUT.
 #   FAULT_CAMPAIGN_OUT
 #                     Tool output path. Defaults to
 #                     ${SIMULATION_DIR}/fault_campaign_out.csv.
-#   CONFIG_FILE
-#                     Config file passed as --config_file. If neither CONFIG_FILE
-#                     nor ARGS is supplied, defaults to
-#                     ${SIMULATION_DIR}/config.json.
-#   ARGS              Direct faultergeist-gen arguments. When ARGS is
-#                     non-empty, no implicit config file is added.
+#   ARGS              Direct faultergeist-gen arguments. When CONFIG_TEMPLATE
+#                     is absent, no --config_file is added.
 #   EXTRA_DEBUG       Adds --v=3. The -DEXTRA_DEBUG=<value> cache variable
 #                     overrides the verbosity for all fault campaigns.
 #   ALLOW_EMPTY       Do not fail when the generated campaign is empty.
@@ -483,8 +423,8 @@ endfunction()
 # required directories, invokes the tool, then touches OUTPUT.
 function(fi_add_fault_campaign NAME)
   set(options ALLOW_EMPTY NO_VLT_CONFIG EXTRA_DEBUG)
-  set(one_value_args OUTPUT CONFIG_FILE WORK_DIR SIMULATION_DIR)
-  set(multi_value_args ARGS DEPENDS)
+  set(one_value_args OUTPUT CONFIG_TEMPLATE WORK_DIR SIMULATION_DIR)
+  set(multi_value_args ARGS DEPENDS EXT_LIB_FILES)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
   _fi_resolve_implicit_arg_with_default(SIMULATION_DIR "${FI_E2E_VERILATOR_OUTPUT_DIR_DEFAULT_FILENAME}" WORK_DIR)
@@ -494,14 +434,35 @@ function(fi_add_fault_campaign NAME)
     set(FI_OUTPUT "${FI_FAULT_CAMPAIGN_OUT}")
   endif()
 
-  if(FI_CONFIG_FILE)
-    set(FI_CONFIG "${FI_CONFIG_FILE}")
-  elseif(NOT FI_CONFIG AND NOT FI_ARGS)
-    set(FI_CONFIG "${FI_SIMULATION_DIR}/config.json")
-  endif()
-
   if(NOT FI_WORK_DIR)
     _fi_default_arg(FI_WORK_DIR WORK_DIR)
+  endif()
+
+  set(FI_CONFIG "")
+  if(FI_CONFIG_TEMPLATE)
+    _fi_resolve_implicit_arg_with_default(JSON_NETLIST "${FI_E2E_JSON_NETLIST_DEFAULT_FILENAME}" WORK_DIR)
+    _fi_default_arg(FI_EXT_LIB_FILES LIB_FILES)
+
+    # Bring forwarded variables into function scope so configure_file(@ONLY)
+    # picks up the resolved values, letting explicit FI_ arguments override
+    # anything inherited from the caller directory scope.
+    foreach(_fi_var DESIGN_TOP JSON_NETLIST VERILOG_NETLIST NETLIST_PATH FAULT_CAMPAIGN_OUT CAMPAIGN_DIR FI_E2E_JOBS)
+      set(_fi_arg_var "FI_${_fi_var}")
+      if(DEFINED ${_fi_arg_var} AND NOT "${${_fi_arg_var}}" STREQUAL "")
+        set(${_fi_var} "${${_fi_arg_var}}")
+      endif()
+    endforeach()
+
+    string(JOIN "\", \"" _fi_lib_files_joined ${FI_EXT_LIB_FILES})
+    if(_fi_lib_files_joined)
+      set(LIB_FILES "\"${_fi_lib_files_joined}\"")
+    else()
+      set(LIB_FILES "")
+    endif()
+
+    set(FI_CONFIG "${FI_SIMULATION_DIR}/config.json")
+    file(MAKE_DIRECTORY "${FI_SIMULATION_DIR}")
+    configure_file("${FI_CONFIG_TEMPLATE}" "${FI_CONFIG}" @ONLY)
   endif()
 
   set(_command "$<TARGET_FILE:faultergeist-gen>" ${FI_ARGS})
@@ -730,7 +691,7 @@ function(fi_add_verilated_sim NAME)
 endfunction()
 
 # fi_add_sim_run(<target>
-#   [EXPECT_FAIL] [EXPECT_MISMATCH] [VEER_MODE]
+#   [EXPECT_FAIL] [EXPECT_MISMATCH] [VEER_MODE] [COVERAGE_TESTING]
 #   [EXPECT_REGEX_MATCH <regex>] [EXPECT_VCD_GOLDENFILE <file_path>]
 #   [EXECUTABLE <path>] [LOG <path>] [WORK_DIR <dir>]
 #   [SIMULATION_DIR <dir>] [VCD_OUTPUT_PATH <path>] [ARGS <args...>]
@@ -757,12 +718,13 @@ endfunction()
 #                     Require the run VCD output to be exactly the same as
 #                     <file_path>.
 #   VEER_MODE         Runs the simulation with VeeR testbench setup.
+#   COVERAGE_TESTING  Exports FI_COVERAGE_TESTING=1 to the executable's environment.
 #
 # The log is written by the script, but the CMake output is a .stamp file. The
 # stamp is touched only after the script succeeds, so failed runs cannot leave a
 # stale successful output just because run.log was written.
 function(fi_add_sim_run NAME)
-  set(options EXPECT_FAIL EXPECT_MISMATCH VEER_MODE)
+  set(options EXPECT_FAIL EXPECT_MISMATCH VEER_MODE COVERAGE_TESTING)
   set(one_value_args EXECUTABLE LOG WORK_DIR SIMULATION_DIR VCD_OUTPUT_PATH EXPECT_VCD_GOLDENFILE TB_TOP EXPECT_REGEX_MATCH)
   set(multi_value_args ARGS DEPENDS)
   cmake_parse_arguments(FI "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -799,6 +761,9 @@ function(fi_add_sim_run NAME)
   set(_fi_command_arg "${FI_EXECUTABLE}")
   if(FI_ARGS)
     string(APPEND _fi_command_arg ";${FI_ARGS}")
+  endif()
+  if(FI_COVERAGE_TESTING)
+    list(APPEND _args "-DFI_COVERAGE_TESTING=ON")
   endif()
 
   # Special case for VeeR testing - custom step is required before running the simulation binary

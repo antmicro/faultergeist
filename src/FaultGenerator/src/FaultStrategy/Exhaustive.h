@@ -23,9 +23,15 @@
 #include <span>
 #include <vector>
 
+struct ExhaustiveConfig {
+    FaultEventType fault_type = FaultEventType::SINGLE_EVENT_UPSET;
+};
+
 class ExhaustiveStrategy : public FaultStrategy {
    public:
-    explicit ExhaustiveStrategy(const Config&);
+    const ExhaustiveConfig exhaustive_config;
+
+    explicit ExhaustiveStrategy(const Config&, const ExhaustiveConfig&);
     std::vector<FaultEvent> generate(std::span<const Signal>) override;
 
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;

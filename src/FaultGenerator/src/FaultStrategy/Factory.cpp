@@ -17,8 +17,8 @@
 #include "Factory.h"
 
 #include "Bendel.h"
+#include "Exhaustive.h"
 #include "FaultStrategy.h"
-#include "FaultStrategy/Exhaustive.h"
 #include "LogUtils.h"
 #include "Random.h"
 #include "UnitUtils.h"
@@ -94,8 +94,20 @@ void from_json(const nlohmann::json& json, BendelConfig& config) {
     });
 }
 
+void from_json(const nlohmann::json& json, ExhaustiveConfig& config) {
+    config = {};
+    if (const auto value = json.find("fault_type"); value != json.end()) {
+        const auto fault_type = value->get<std::string_view>();
+        if (fault_type == "seu") {
+            config.fault_type = FaultEventType::SINGLE_EVENT_UPSET;
+        } else if (fault_type == "set") {
+            config.fault_type = FaultEventType::SINGLE_EVENT_TRANSIENT;
+        }
+    }
+}
+
 std::shared_ptr<FaultStrategy> FaultStrategyFactory::buildFromJson(
-    const FaultStrategy::Config& config,
+    FaultStrategy::Config& config,
     const nlohmann::json& model_config
 ) {
     std::string_view model_name = model_config.at("name").get<std::string_view>();
@@ -112,8 +124,14 @@ std::shared_ptr<FaultStrategy> FaultStrategyFactory::buildFromJson(
         VLOG(1) << "Parsed bendel model from json";
         return std::make_shared<BendelStrategy>(config, bendel_config);
     } else if (model_name == "exhaustive") {
+        const auto exhaustive_config = model_config.at("params").get<ExhaustiveConfig>();
         LOG(INFO) << "Parsed exhaustive model from json";
-        return std::make_shared<ExhaustiveStrategy>(config);
+        if (exhaustive_config.fault_type == FaultEventType::SINGLE_EVENT_TRANSIENT) {
+            config.all_generate_forceable = true;
+        } else if (exhaustive_config.fault_type == FaultEventType::SINGLE_EVENT_UPSET) {
+            config.all_generate_public_flat_rw = true;
+        }
+        return std::make_shared<ExhaustiveStrategy>(config, exhaustive_config);
     } else {
         SEE_CHECK(false) << "Unknown model: " << model_name << "\n";
     }

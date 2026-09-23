@@ -17,12 +17,45 @@
 #pragma once
 
 #include <filesystem>
+#include <ostream>
 #include <span>
 
 struct Signal;
 
 class VltConfigWriter {
+    std::filesystem::path path;
+    std::ostream* stream = nullptr;
+    std::span<const Signal> signals;
+    bool all_forceable = false;
+    bool all_public_flat_rw = false;
+
    public:
-    static void write(std::filesystem::path, std::span<const Signal>);
-    static void write(std::ostream&, std::span<const Signal>);
+    VltConfigWriter(
+        std::filesystem::path path,
+        std::span<const Signal> signals,
+        bool all_forceable = false,
+        bool all_public_flat_rw = false
+    )
+        : path(std::move(path)),
+          signals(signals),
+          all_forceable(all_forceable),
+          all_public_flat_rw(all_public_flat_rw) {}
+    VltConfigWriter(
+        std::ostream& stream,
+        std::span<const Signal> signals,
+        bool all_forceable = false,
+        bool all_public_flat_rw = false
+    )
+        : stream(&stream),
+          signals(signals),
+          all_forceable(all_forceable),
+          all_public_flat_rw(all_public_flat_rw) {}
+
+    void write();
+    static void write(
+        std::ostream&,
+        std::span<const Signal>,
+        bool all_forceable = false,
+        bool all_public_flat_rw = false
+    );
 };

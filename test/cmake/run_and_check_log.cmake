@@ -27,8 +27,13 @@ endif()
 get_filename_component(_log_dir "${FI_LOG}" DIRECTORY)
 file(MAKE_DIRECTORY "${_log_dir}")
 
+set(_fi_command ${FI_COMMAND})
+if(FI_COVERAGE_TESTING)
+  set(_fi_command "${CMAKE_COMMAND}" -E env "FI_COVERAGE_TESTING=1" -- ${_fi_command})
+endif()
+
 execute_process(
-  COMMAND ${FI_COMMAND}
+  COMMAND ${_fi_command}
   WORKING_DIRECTORY "${FI_WORK_DIR}"
   RESULT_VARIABLE _result
   OUTPUT_VARIABLE _stdout

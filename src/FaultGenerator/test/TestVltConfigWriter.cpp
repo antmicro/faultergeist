@@ -27,7 +27,7 @@
 TEST(VltConfigWriter, PrintHeader) {
     std::stringstream actual;
 
-    VltConfigWriter::write(actual, {});
+    VltConfigWriter{actual, {}}.write();
     std::string printout = actual.str();
     EXPECT_THAT(printout, ::testing::ContainsRegex("`verilator_config"));
 }

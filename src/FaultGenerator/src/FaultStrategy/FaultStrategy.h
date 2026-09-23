@@ -33,6 +33,8 @@ class FaultStrategy {
         std::uint32_t seed;
         unit::SIM_TIME simulation_time;
         std::uint32_t thread_number;
+        bool all_generate_forceable = false;
+        bool all_generate_public_flat_rw = false;
 
         bool tooManyEventsGenerated(std::size_t generated) const {
             return num_of_events > 0 && generated >= num_of_events;

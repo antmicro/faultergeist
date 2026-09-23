@@ -8,12 +8,11 @@ set(NETLIST_PATH "${JSON_NETLIST}")
 set(EXTRA_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/extra_config.json.in")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/extra_config.json.in" "${EXTRA_CONFIG}")
-fi_configure_file("${CMAKE_CURRENT_LIST_DIR}/config.json.in"
-  DEPENDS "${NETLIST_PATH}"
-)
 fi_add_fault_campaign(fi_e2e_worker_basic_extra_config_campaign
-  CONFIG_FILE "${CONFIG_FILE}"
-  DEPENDS fi_e2e_worker_basic_netlist "${EXTRA_CONFIG}"
+  CONFIG_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/config.json.in"
+  DEPENDS
+    fi_e2e_worker_basic_netlist
+    "${EXTRA_CONFIG}"
 )
 
 fi_add_verilated_sim(fi_e2e_worker_basic_extra_config_sim

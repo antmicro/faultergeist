@@ -10,10 +10,8 @@ block()
   set(SIMULATION_DIR "${WORK_DIR}")
   set(VLT_CONFIG "${JSON_VLT_CONFIG}")
   set(NETLIST_PATH "${JSON_NETLIST}")
-  fi_configure_file("${CMAKE_CURRENT_LIST_DIR}/config.json.in"
-    DEPENDS "${NETLIST_PATH}"
-  )
   fi_add_fault_campaign(fi_e2e_worker_basic_bendel_json_campaign
+    CONFIG_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/config.json.in"
     DEPENDS fi_e2e_worker_basic_netlist
   )
 
@@ -38,10 +36,8 @@ block()
   set(SIMULATION_DIR "${WORK_DIR}")
   set(VLT_CONFIG "${VERILOG_VLT_CONFIG}")
   set(NETLIST_PATH "${VERILOG_NETLIST}")
-  fi_configure_file("${CMAKE_CURRENT_LIST_DIR}/config.json.in"
-    DEPENDS "${NETLIST_PATH}"
-  )
   fi_add_fault_campaign(fi_e2e_worker_basic_bendel_verilog_campaign
+    CONFIG_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/config.json.in"
     DEPENDS fi_e2e_worker_basic_netlist
   )
 

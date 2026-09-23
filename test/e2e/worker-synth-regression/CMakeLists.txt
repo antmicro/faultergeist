@@ -14,12 +14,9 @@ fi_add_yosys_json(fi_e2e_worker_synth_no_techmap_netlist
     NO_TECHMAP
 )
 
-fi_configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
-    EXT_LIB_FILES "${RTL_ROOT}/worker.lib"
-    DEPENDS "${JSON_NETLIST}"
-)
 fi_add_fault_campaign(fi_e2e_worker_synth_no_techmap_campaign
+  CONFIG_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
+  EXT_LIB_FILES "${RTL_ROOT}/worker.lib"
   DEPENDS "${JSON_NETLIST}"
 )
 fi_add_verilated_sim(fi_e2e_worker_synth_no_techmap_sim
@@ -36,11 +33,8 @@ set(SIMULATION_DIR "${WORK_DIR}/with_techmap")
 fi_add_yosys_json(fi_e2e_worker_synth_with_techmap_netlist
 )
 
-fi_configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
-    DEPENDS "${JSON_NETLIST}"
-)
 fi_add_fault_campaign(fi_e2e_worker_synth_with_techmap_campaign
+  CONFIG_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
   DEPENDS "${JSON_NETLIST}"
 )
 fi_add_verilated_sim(fi_e2e_worker_synth_with_techmap_sim

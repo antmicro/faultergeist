@@ -52,7 +52,7 @@ struct SignalElems {
 
 struct SignalElemsHash {
     std::size_t operator()(const SignalElems& value) const noexcept {
-        const auto hash = std::hash<std::optional<std::string_view>>{};
+        const auto hash = std::hash<std::string_view>{};
         return hash(value.mod) ^ (hash(value.var) << 1);
     }
 };
@@ -63,29 +63,39 @@ void writeHeader(std::ostream& os) {
     os << std::endl;
 }
 
-};  // namespace
-
-void writeSignal(std::ostream& os, const SignalElems& signal) {
-    switch (signal.sig_type) {
-        case SignalType::REGISTER:
-            os << "public_flat_rw -module \"" << signal.mod << "\" -var \"" << signal.var << "\"\n";
-            break;
-        case SignalType::WIRE:
-            os << "forceable -module \"" << signal.mod << "\" -var \"" << signal.var << "\"\n";
-            break;
-        default:
-            break;
+void writeSignal(
+    std::ostream& os,
+    const SignalElems& signal,
+    bool all_forceable,
+    bool all_public_flat_rw
+) {
+    if (all_public_flat_rw || signal.sig_type == SignalType::REGISTER) {
+        os << "public_flat_rw -module \"" << signal.mod << "\" -var \"" << signal.var << "\"\n";
+    }
+    if (all_forceable || signal.sig_type == SignalType::WIRE) {
+        os << "forceable -module \"" << signal.mod << "\" -var \"" << signal.var << "\"\n";
     }
 }
 
-void VltConfigWriter::write(std::filesystem::path path, std::span<const Signal> signals) {
+}  // namespace
+
+void VltConfigWriter::write() {
+    if (stream) {
+        write(*stream, signals, all_forceable, all_public_flat_rw);
+        return;
+    }
     VLOG(1) << "Writing public_flat config to: " << path.c_str();
     std::ofstream of(path);
     SEE_PCHECK(of) << "cannot open '" << path << "'. " << "Skipping public_flat config.";
-    write(of, signals);
+    write(of, signals, all_forceable, all_public_flat_rw);
 }
 
-void VltConfigWriter::write(std::ostream& os, std::span<const Signal> signals) {
+void VltConfigWriter::write(
+    std::ostream& os,
+    std::span<const Signal> signals,
+    bool all_forceable,
+    bool all_public_flat_rw
+) {
     std::unordered_set<SignalElems, SignalElemsHash> printed;
 
     writeHeader(os);
@@ -93,7 +103,7 @@ void VltConfigWriter::write(std::ostream& os, std::span<const Signal> signals) {
         const auto signal = SignalElems(sig);
         if (!printed.contains(signal)) {
             printed.insert(signal);
-            writeSignal(os, signal);
+            writeSignal(os, signal, all_forceable, all_public_flat_rw);
         }
     }
 }
