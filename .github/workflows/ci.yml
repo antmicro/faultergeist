@@ -11,22 +11,18 @@ concurrency:
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CC: gcc-14
-  CXX: g++-14
-  BUILD_PACKAGES: >-
-    autoconf build-essential bison ccache cmake file flex g++-14 gcc-14 gawk git gzip help2man
-    libffi-dev libfl-dev libreadline-dev libstdc++-14-dev tcl-dev zlib1g-dev 7zip graphviz xdot
+  CXX: 'g++-14'
+  CC: 'gcc-14'
 
 jobs:
   prepare-verilator:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 120
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -34,14 +30,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-${{ github.job }}-
       - run: ccache --zero-stats
       - name: Build Verilator
-        run: |
-          git clone https://github.com/verilator/verilator.git verilator
-          cd verilator
-          git checkout 0bad0faca667151e639445c31f61091e65847363
-          git show -s
-          autoconf
-          ./configure --prefix="$PWD"
-          make -j "$(nproc)" CC="ccache $CC" CXX="ccache $CXX"
+        run: ci/build-verilator.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -54,33 +43,21 @@ jobs:
           retention-days: 1
 
   prepare-yosys:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 120
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-ccache-${{ github.job }}-
       - run: ccache --zero-stats
-      - name: Download submodules
-        run: git submodule update --init --recursive third_party/yosys third_party/yosys-slang
       - name: Build Yosys
-        run: |
-          cd third_party/yosys
-          cmake -B build . -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel "$(nproc)"
-      - name: Build Yosys' slang plugin
-        run: |
-          cd third_party/yosys-slang
-          make -j "$(nproc)" CXX="ccache $CXX" YOSYS_PREFIX="$GITHUB_WORKSPACE/third_party/yosys/build/"
-          mkdir -p ../yosys/build/share/plugins
-          cp build/slang.so ../yosys/build/share/plugins
+        run: ci/build-yosys.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -93,27 +70,25 @@ jobs:
           retention-days: 1
 
   check-formatting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 60
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install clang-format-19
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - name: Check formatting
-        run: find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' -print0 | xargs -0 clang-format-19 --dry-run --Werror
+        run: ci/check-formatting.sh
 
   run-example:
     needs: [prepare-verilator, prepare-yosys]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 120
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -125,18 +100,10 @@ jobs:
       - uses: actions/download-artifact@v4.3.0
         with: {name: yosys}
       - run: tar -xf verilator.tar && tar -xf yosys.tar
-      - name: Use prepared Yosys
-        run: |
-          yosys_dir="$GITHUB_WORKSPACE/third_party/yosys/build"
-          echo "$yosys_dir" >> "$GITHUB_PATH"
-          "$yosys_dir/yosys" -V
-          "$yosys_dir/yosys" -m slang -p 'help read_slang'
       - name: Run example
         env:
           VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: |
-          cd example
-          bash run.sh
+        run: ci/run-example.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -149,14 +116,13 @@ jobs:
 
   run-self-tests:
     needs: [prepare-verilator, prepare-yosys]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 120
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -169,20 +135,10 @@ jobs:
         with: {name: yosys}
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
-      - name: Use prepared Yosys
-        run: |
-          yosys_dir="$GITHUB_WORKSPACE/third_party/yosys/build"
-          echo "$yosys_dir" >> "$GITHUB_PATH"
-          "$yosys_dir/yosys" -V
-          "$yosys_dir/yosys" -m slang -p 'help read_slang'
       - name: Build and run unit and integration tests
         env:
           VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: |
-          set -o pipefail
-          cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build -j "$(nproc)" 2>&1 | tee build/cmake-build.log
-          ctest --test-dir build --output-on-failure --no-tests=error --tests-regex 'unit|integration' --parallel "$(nproc)"
+        run: ci/run-self-tests.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -196,14 +152,13 @@ jobs:
 
   run-worker-end-to-end-tests:
     needs: [prepare-verilator, prepare-yosys]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 180
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -216,20 +171,10 @@ jobs:
         with: {name: yosys}
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
-      - name: Use prepared Yosys
-        run: |
-          yosys_dir="$GITHUB_WORKSPACE/third_party/yosys/build"
-          echo "$yosys_dir" >> "$GITHUB_PATH"
-          "$yosys_dir/yosys" -V
-          "$yosys_dir/yosys" -m slang -p 'help read_slang'
       - name: Build and run worker end-to-end tests
         env:
           VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: |
-          set -o pipefail
-          cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Debug -DFI_E2E_FORCE_SETUP_VEER=OFF
-          cmake --build build -j "$(nproc)" 2>&1 | tee build/cmake-build.log
-          ctest --test-dir build --output-on-failure --no-tests=error --tests-regex 'e2e.worker'
+        run: ci/run-e2e-tests.sh worker
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -243,14 +188,13 @@ jobs:
 
   run-parser-tests:
     needs: [prepare-verilator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container: debian:trixie
     timeout-minutes: 120
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -yq update >/dev/null
-          sudo apt-get -yq install $BUILD_PACKAGES
       - uses: actions/checkout@v4.2.2
+      - name: Install dependencies
+        run: ci/install-packages.sh
       - uses: actions/cache@v4.2.3
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -266,10 +210,7 @@ jobs:
       - name: Build and run parser tests
         env:
           VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: |
-          ./build.sh
-          src/FaultGenerator/test/testParser.sh "$RUNNER_TEMP/OpenROAD/test" build/src/FaultGenerator/test/LibertyParserBin
-          src/FaultGenerator/test/testParser.sh "$GITHUB_WORKSPACE/third_party/asap7" build/src/FaultGenerator/test/LibertyParserBin
+        run: ci/run-parser-tests.sh "$RUNNER_TEMP/OpenROAD/test" "${{ github.workspace }}/third_party/asap7"
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats

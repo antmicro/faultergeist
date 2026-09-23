@@ -1,19 +1,22 @@
 image: debian:trixie
 
+variables:
+  CXX: 'g++-14'
+  CC: 'gcc-14'
+
 stages:
   - prepare
   - test
 
 .build-setup: &build-setup
-  before_get_sources:
-    - apt-get -yq update > /dev/null && apt-get -yq upgrade
-    - apt-get -yq install python3 make build-essential autoconf flex bison git ccache help2man curl cmake gzip file grep gawk lld clang libffi-dev libfl-dev libreadline-dev pkg-config tcl-dev zlib1g-dev graphviz xdot 7zip
+  before_script:
+    - ci/install-packages.sh
 
 .veer-setup: &veer-setup
   before_get_sources:
     - apt-get update &> /dev/null
     - apt-get -y --no-install-recommends install
-      autoconf bc bison build-essential ca-certificates ccache clang
+      autoconf bc bison build-essential ca-certificates ccache gcc
       cmake flex gdb git gtkwave help2man libfl2 libfl-dev libclang-rt-19-dev
       libgoogle-perftools-dev libsystemc libsystemc-dev perl wget python3-distro
       z3 zlib1g zlib1g-dev time libssl-dev libbz2-dev libreadline-dev libsqlite3-dev
@@ -36,6 +39,7 @@ prepare-verilator:
   stage: prepare
   variables:
     VERILATOR_ROOT: /ci/verilator
+    VERILATOR_REPO: https://gitlab-ci-token:${CI_JOB_TOKEN}@${VERILATOR_URL}
     SCALENODE_CPU: 8
     SCALENODE_RAM: 16000
     CCACHE_DIR: .ccache
@@ -43,14 +47,7 @@ prepare-verilator:
     paths:
      - $CCACHE_DIR
   script:
-    - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${VERILATOR_URL}" "$VERILATOR_ROOT"
-    - cd verilator
-    # Latest as of 21.09.2026
-    - git checkout 46774fded9a960ca5f5110d6ff099e73fe08f86c
-    - git show -s
-    - autoconf
-    - ./configure --prefix=`pwd`
-    - make -j `nproc`
+    - ci/build-verilator.sh
   artifacts:
     when: always
     paths:
@@ -68,19 +65,7 @@ prepare-yosys:
     paths:
      - $CCACHE_DIR
   script:
-    - cd third_party/yosys
-    - git submodule update --init --recursive .
-    - cmake -B build . -DCMAKE_BUILD_TYPE=Release
-    - cmake --build build --config Release --parallel $(nproc)
-    - cmake --install build --strip
-    - cd ../
-    - export PATH=$(pwd)/yosys/build:$PATH
-    - cd yosys-slang
-    - git submodule update --init --recursive .
-    - make -j $(nproc) CXX="ccache g++" install
-    - mkdir -p ../yosys/build/share/plugins
-    - cp build/slang.so ../yosys/build/share/plugins
-
+    - ci/build-yosys.sh
   artifacts:
     when: always
     paths:
@@ -104,13 +89,9 @@ check-formatting:
   <<: *build-setup
   stage: test
   variables:
-    SCALENODE_RAM: 8000 # the only way to force generation of slang headers is to build slang_slang, which fails on 4000 RAM
-  before_script:
-    - apt-get update && apt-get install -y clang clang-format libc++-dev libc++abi-dev cmake build-essential
-    - cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_FLAGS=-stdlib=libc++ -DENABLE_WEXTRA=ON
+    SCALENODE_RAM: 4000
   script:
-    - echo "Checking formatting..."
-    - find ./src -regextype posix-egrep -regex '.*(\.cpp|\.h)' ! -name 'sv_vpi_user.h' -print0 | xargs -0 clang-format --dry-run --Werror
+    - ci/check-formatting.sh
 
 run-example:
   <<: *build-setup
@@ -122,9 +103,7 @@ run-example:
     - prepare-verilator
     - prepare-yosys
   script:
-    - export PATH=$(pwd)/third_party/yosys/build:$PATH
-    - cd example
-    - bash run.sh
+    - ci/run-example.sh
   artifacts:
     when: always
     paths:
@@ -141,11 +120,7 @@ run-self-tests:
     - prepare-yosys
     - prepare-liberty
   script:
-    - set -o pipefail
-    - export PATH=$(pwd)/third_party/yosys/build:$PATH
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DFI_E2E_GENERATOR_EXTRA_DEBUG=3 -DENABLE_WEXTRA=ON
-    - cmake --build build -j $(nproc) 2>&1 | tee build/Testing/Temporary/cmake-build.log
-    - ctest --test-dir build --output-on-failure --tests-regex 'unit|integration'
+    - ci/run-self-tests.sh
   artifacts:
     when: always
     paths:
@@ -158,17 +133,15 @@ run-self-tests:
   variables:
     SCALENODE_RAM: 16000
     VERILATOR_ROOT: /ci/verilator
+    VEER_JSON_NETLIST_CACHE_PATH: /ci/synth_cache/veer_post_synth.json
+    VEER_VERILOG_NETLIST_CACHE_PATH: /ci/synth_cache/veer_post_synth.v
   dependencies:
     - prepare-verilator
     - prepare-yosys
     - prepare-liberty
   script:
-    - set -o pipefail
-    - export PATH=$(pwd)/third_party/yosys/build:$PATH
     - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@${SYNTH_CACHE_URL}" --depth 1 -b synth-cache synth_cache
-    - cmake -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DVEER_JSON_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.json -DVEER_VERILOG_NETLIST_CACHE_PATH=/ci/synth_cache/veer_post_synth.v -DFI_E2E_GENERATOR_EXTRA_DEBUG=3
-    - cmake --build build -j $(nproc) 2>&1 | tee build/cmake-build.log
-    - ctest --test-dir build --output-on-failure --tests-regex e2e.${CI_PARALLEL_NAME}
+    - ci/run-e2e-tests.sh "${CI_PARALLEL_NAME}"
   artifacts:
     when: always
     paths:
@@ -191,12 +164,9 @@ run-parser-tests:
   dependencies:
     - prepare-verilator
     - prepare-liberty
-  before_script:
-    - git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD.git /ci/OpenROAD
   script:
-    - ./build.sh
-    - src/FaultGenerator/test/testParser.sh /ci/OpenROAD/test build/src/FaultGenerator/test/LibertyParserBin
-    - src/FaultGenerator/test/testParser.sh /ci/third_party/asap7 build/src/FaultGenerator/test/LibertyParserBin
+    - git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD.git /ci/OpenROAD
+    - ci/run-parser-tests.sh /ci/OpenROAD/test /ci/third_party/asap7
 
 run-veer-sanity-check:
   <<: *veer-setup
