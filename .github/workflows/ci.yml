@@ -20,6 +20,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
@@ -47,6 +49,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
@@ -86,6 +90,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
@@ -120,6 +126,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
@@ -156,6 +164,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 180
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
@@ -192,6 +202,8 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - name: Install git
+        run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
       - name: Install dependencies
         run: ci/install-packages.sh
