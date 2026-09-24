@@ -162,6 +162,13 @@ std::optional<Event> EventParser::parse(std::string_view line) {
         fin_printf("Ignoring the event\n");
         return std::nullopt;
     }
+    if (it->second.isStruct() && type == Event::Type::SingleEventTransientUpset) {
+        fin_printf(
+            "%%Unsupported: SET on unpacked struct: %.*s\n", (int)sig_path.size(), sig_path.data()
+        );
+        fin_printf("Ignoring the event\n");
+        return std::nullopt;
+    }
 
     auto [resolved_signal, resolved_bit_idx] = resolveSignal(it->second, *bit_idx);
 
