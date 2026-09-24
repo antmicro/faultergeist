@@ -19,6 +19,7 @@
 #include "FaultEventsSignalFormatter.h"
 #include "FaultStrategy/Bendel.h"
 #include "FaultStrategy/FaultStrategy.h"
+#include "FaultStrategy/MBUGenerator.h"
 #include "FaultStrategy/Random.h"
 #include "FaultStrategy/Weibull.h"
 
@@ -148,7 +149,7 @@ TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
 
     std::vector<Signal> signals = createSignals(64, weibull_config.reference_cell_area, 256 * 1024);
     WeibullStrategy strategy{config, weibull_config};
-    std::vector<FaultEvent> stream_events = strategy.generate(signals);
+    std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
     FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
     std::stringstream actual;
@@ -191,7 +192,7 @@ TEST(FaultGenerationShouldBeDeterministic, BendelStrategy) {
 
     std::vector<Signal> signals = createSignals(64, bendel_config.reference_cell_area, 256 * 1024);
     BendelStrategy strategy{config, bendel_config};
-    std::vector<FaultEvent> stream_events = strategy.generate(signals);
+    std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
     FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
     std::stringstream actual;
@@ -210,7 +211,7 @@ TEST(FaultGenerationShouldBeDeterministic, RandomStrategy) {
     std::vector<Signal> signals = createSignals(10, 10 * unit::um2);
 
     RandomStrategy strategy{config};
-    std::vector<FaultEvent> stream_events = strategy.generate(signals);
+    std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
     FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
     std::stringstream actual;

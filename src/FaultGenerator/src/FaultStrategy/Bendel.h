@@ -55,7 +55,7 @@ class BendelStrategy final : public FaultStrategy {
    public:
     const BendelConfig bendel_config;
     explicit BendelStrategy(const Config&, const BendelConfig&);
-    std::vector<FaultEvent> generate(std::span<const Signal> signals) override;
+    std::vector<FaultEvent> generate(const MBUGenerator&, std::span<const Signal> signals) override;
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:

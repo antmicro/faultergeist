@@ -37,6 +37,8 @@ struct Placement {
                      )
                   << " }";
     }
+
+    bool containsPoint(unit::DIST x, unit::DIST y) const;
 };
 
 struct CellPlacementInfo {

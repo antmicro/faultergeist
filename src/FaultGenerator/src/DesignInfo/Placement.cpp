@@ -18,9 +18,12 @@
 
 #include "PlacementParser.h"
 
-#include <algorithm>
 #include <string>
 #include <utility>
+
+bool Placement::containsPoint(unit::DIST x, unit::DIST y) const {
+    return x > this->x && x < this->x + width && y > this->y && y < this->y + height;
+}
 
 PlacementInfo::PlacementInfo(
     std::optional<Placement> device_info,

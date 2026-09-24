@@ -64,4 +64,8 @@ struct Signal {
         os << ", .type=" << signal.type;
         return os << " }";
     }
+
+    Iterator getSignalIter(std::span<const Signal> signals) const {
+        return signals.begin() + (this - signals.data());
+    }
 };

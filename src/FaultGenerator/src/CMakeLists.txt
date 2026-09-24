@@ -12,6 +12,8 @@ add_library(FaultGenerationToolLib
   FaultStrategy/Factory.cpp
   FaultStrategy/Random.cpp
   FaultStrategy/Weibull.cpp
+  FaultStrategy/MBUGenerator.cpp
+  FaultStrategy/PlacementMap.cpp
 
   SignalCollector/IsFlipFlopPredicate.cpp
   SignalCollector/SignalCollector.cpp

@@ -23,6 +23,7 @@
 
 #include "FaultEvent.h"
 #include "FaultStrategy/Bendel.h"
+#include "FaultStrategy/MBUGenerator.h"
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>
@@ -93,7 +94,7 @@ TEST(BendelGenerationTest, CountsWithinTolerance) {
     std::vector<FaultEvent> all_events;
     for (std::size_t i = 0; i < expected_counts.size(); ++i) {
         BendelStrategy strategy{config, BendelConfig{{streams[i]}}};
-        std::vector<FaultEvent> stream_events = strategy.generate(signals);
+        std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
         std::uint64_t count = stream_events.size();
         std::uint64_t expected = expected_counts[i];
         double diff =
@@ -125,7 +126,7 @@ TEST(BendelGenerationTest, WhenInParallelResultIsSorted) {
     BendelConfig bendel_config = {.streams = streams};
 
     BendelStrategy strategy{config, bendel_config};
-    std::vector<FaultEvent> stream_events = strategy.generate(signals);
+    std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
     ASSERT_TRUE(std::is_sorted(stream_events.begin(), stream_events.end()));
 }

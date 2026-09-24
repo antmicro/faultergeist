@@ -149,4 +149,24 @@ static std::optional<unit::AREA> normalizeArea(double value, std::string_view un
     return std::nullopt;
 }
 
+[[maybe_unused]]
+static std::optional<unit::DIST> normalizeDist(double value, std::string_view unit) {
+    if (unit == "m") {
+        return value * unit::m;
+    }
+    if (unit == "cm") {
+        return value * unit::cm;
+    }
+    if (unit == "mm") {
+        return value * unit::mm;
+    }
+    if (unit == "um") {
+        return value * unit::um;
+    }
+    if (unit == "nm") {
+        return value * unit::nm;
+    }
+    return std::nullopt;
+}
+
 };  // namespace unit

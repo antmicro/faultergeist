@@ -19,6 +19,7 @@
 #include "FaultEvent.h"
 #include "FaultStrategy.h"
 #include "LogUtils.h"
+#include "MBUGenerator.h"
 #include "ScheduledEvent.h"
 #include "Signal.h"
 #include "UnitUtils.h"
@@ -62,6 +63,7 @@ class FaultStrategyRunner {
     const EventTimeGeneratorT& evTimeGenerator;
     const MaxTimeCalculatorT& maxTimeCalc;
     const FaultStrategy::Config& config;
+    const MBUGenerator& mbu_generator;
     std::span<const Stream> streams;
     std::span<const Signal> signals;
     std::vector<unit::SIM_TIME> max_times;
@@ -71,12 +73,14 @@ class FaultStrategyRunner {
         const EventTimeGeneratorT& eventTimeGenerator,
         const MaxTimeCalculatorT& maxTimeCalc,
         const FaultStrategy::Config& config,
+        const MBUGenerator& mbu_generator,
         std::span<const Stream> streams,
         std::span<const Signal> signals
     )
         : evTimeGenerator(eventTimeGenerator),
           maxTimeCalc(maxTimeCalc),
           config(config),
+          mbu_generator(mbu_generator),
           streams(streams),
           signals(signals) {
         SEE_CHECK(streams.size() > 0) << "No streams read";
@@ -203,6 +207,20 @@ class FaultStrategyRunner {
                 ),
                 faultEventType(signal.type)
             );
+            if (auto secondary = mbu_generator.generateSecondaryFault(worker_gen, signal)) {
+                result.emplace_back(
+                    secondary->getSignalIter(signals),
+                    unit::toSimTime(next.time),
+                    /*signal_path=*/"",
+                    int_dist(
+                        worker_gen.random_generator,
+                        std::uniform_int_distribution<std::uint32_t>::param_type{
+                            0, secondary->cell.width
+                        }
+                    ),
+                    faultEventType(signal.type)
+                );
+            }
 
             // Schedule next one
             event_queue.emplace(

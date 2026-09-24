@@ -18,6 +18,7 @@
 
 #include "FaultEvent.h"
 #include "FaultStrategy.h"
+#include "MBUGenerator.h"
 #include "UnitUtils.h"
 
 #include <algorithm>
@@ -25,7 +26,10 @@
 
 RandomStrategy::RandomStrategy(const Config& config) : FaultStrategy(config) {}
 
-std::vector<FaultEvent> RandomStrategy::generate(std::span<const Signal> signals) {
+std::vector<FaultEvent> RandomStrategy::generate(
+    const MBUGenerator& mbu_generator,
+    std::span<const Signal> signals
+) {
     FaultStrategy::RandomGen gen = FaultStrategy::RandomGen(config.seed);
     std::vector<unit::SIM_TIME> time_values;
     time_values.reserve(config.num_of_events);
@@ -59,6 +63,20 @@ std::vector<FaultEvent> RandomStrategy::generate(std::span<const Signal> signals
             ),
             faultEventType(signal.type)
         });
+        if (auto secondary = mbu_generator.generateSecondaryFault(gen, signal)) {
+            fault_events.emplace_back(
+                secondary->getSignalIter(signals),
+                time_values[index],
+                /*signal_path=*/"",
+                int_dist(
+                    gen.random_generator,
+                    std::uniform_int_distribution<std::uint32_t>::param_type{
+                        0, secondary->cell.width
+                    }
+                ),
+                faultEventType(signal.type)
+            );
+        }
     }
     return fault_events;
 }

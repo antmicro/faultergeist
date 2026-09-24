@@ -25,7 +25,6 @@
 #include "UnitUtils.h"
 
 #include <cmath>
-#include <limits>
 #include <vector>
 
 bool WeibullConfig::Stream::isValid(unit::LET let_threshold) {
@@ -69,7 +68,10 @@ unit::TIME WeibullStrategy::eventTime(
     return dist(gen.random_generator) / rate;
 }
 
-std::vector<FaultEvent> WeibullStrategy::generate(std::span<const Signal> signals) {
+std::vector<FaultEvent> WeibullStrategy::generate(
+    const MBUGenerator& mbu_generator,
+    std::span<const Signal> signals
+) {
     VLOG(1) << "Weibull strategy generating in parallel";
 
     auto eventTime = [&](const Signal& signal,
@@ -84,7 +86,9 @@ std::vector<FaultEvent> WeibullStrategy::generate(std::span<const Signal> signal
     auto maxTime = [&](const WeibullConfig::Stream& stream) { return stream.max_time; };
     using WeibullRunner =
         FaultStrategyRunner<WeibullConfig::Stream, decltype(eventTime), decltype(maxTime)>;
-    WeibullRunner runner(eventTime, maxTime, config, weibull_config.streams, signals);
+    WeibullRunner runner(
+        eventTime, maxTime, config, mbu_generator, weibull_config.streams, signals
+    );
 
     std::vector<FaultEvent> result = runner.generateInParallelByTimeSlice();
     VLOG(1) << "Weibull strategy generated " << result.size() << " faults";

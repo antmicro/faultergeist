@@ -51,6 +51,7 @@ TEST(RandomStrategyTests, JsonConfig) {
     "vlt_config": "config-file.vlt",
     "fault_campaign_out": "random_file.csv",
     "liberty_area_scale": "26cm2",
+    "mbu_radius": "2.5mm",
     "campaign_number": 26,
     "thread_number": 15
   }
@@ -66,6 +67,8 @@ TEST(RandomStrategyTests, JsonConfig) {
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_EQ(actual.campaign_number, 26);
     EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 26 * unit::cm2);
+    ASSERT_TRUE(actual.mbu_radius);
+    EXPECT_QUANTITY_DOUBLE_EQ(*actual.mbu_radius, 2.5 * unit::mm);
     EXPECT_EQ(actual.vlt_config, "config-file.vlt");
 
     auto random = std::dynamic_pointer_cast<RandomStrategy>(actual.strategy);
@@ -112,6 +115,7 @@ TEST(WeibullStrategyTests, JsonConfig) {
     EXPECT_EQ(actual.netlist_path, "worker.json");
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 17 * unit::um2);
+    EXPECT_FALSE(actual.mbu_radius);
 
     auto strategy = std::dynamic_pointer_cast<WeibullStrategy>(actual.strategy);
     ASSERT_TRUE(strategy);

@@ -25,6 +25,7 @@
 
 struct Signal;
 struct FaultEvent;
+class MBUGenerator;
 
 class FaultStrategy {
    public:
@@ -55,7 +56,10 @@ class FaultStrategy {
 
     const Config config;
 
-    virtual std::vector<FaultEvent> generate(std::span<const Signal> signals) = 0;
+    virtual std::vector<FaultEvent> generate(
+        const MBUGenerator&,
+        std::span<const Signal> signals
+    ) = 0;
     virtual std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) = 0;
 
    protected:

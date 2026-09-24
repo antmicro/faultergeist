@@ -14,13 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "DesignInfo/CellAreaInfoParser.h"
 #include "DesignInfo/Liberty.h"
 #include "DesignInfo/Placement.h"
 #include "FaultCampaignWriter.h"
 #include "FaultEvent.h"
 #include "FaultEventsSignalFormatter.h"
 #include "FaultStrategy/FaultStrategy.h"
+#include "FaultStrategy/MBUGenerator.h"
 #include "GlobalOpts.h"
 #include "LogUtils.h"
 #include "Signal.h"
@@ -40,6 +40,7 @@ struct TaskInput {
     std::span<const Signal> signals;
     const FaultCampaignWriter& writer;
     std::filesystem::path output_file;
+    const MBUGenerator& mbu_generator;
 };
 
 std::vector<TaskInput> generate_tasks(
@@ -47,6 +48,7 @@ std::vector<TaskInput> generate_tasks(
     const std::vector<Signal>& signals,
     const FaultCampaignWriter& writer,
     const std::string& root_path,
+    const MBUGenerator& mbu_generator,
     std::uint64_t seed,
     std::uint64_t count
 ) {
@@ -72,7 +74,11 @@ std::vector<TaskInput> generate_tasks(
         std::stringstream campaign_output_filename;
         campaign_output_filename << root_path << "/fault_campaign_" << new_config.seed << ".csv";
         result.emplace_back(
-            strategy->copy_with(new_config), signals, writer, campaign_output_filename.str()
+            strategy->copy_with(new_config),
+            signals,
+            writer,
+            campaign_output_filename.str(),
+            mbu_generator
         );
     }
     return result;
@@ -81,7 +87,8 @@ std::vector<TaskInput> generate_tasks(
 void generate_single_campaign(const TaskInput& input) {
     VLOG(1) << "call generate_single_campaign";
     try {
-        const std::vector<FaultEvent> fault_events = input.strategy->generate(input.signals);
+        const std::vector<FaultEvent> fault_events =
+            input.strategy->generate(input.mbu_generator, input.signals);
         input.writer.write(input.output_file, fault_events);
         VLOG(1) << "generate_single_campaign succeeded, saving to " << input.output_file;
     } catch (...) {
@@ -109,15 +116,17 @@ void create_directory(std::string_view path) {
 void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signals) {
     std::string prefix_path = combineSignalPath(opts.sig_path_prefix, opts.top_instance);
     FaultCampaignWriter::FaultFormatter formatter{FaultEventsSignalFormatter(prefix_path, signals)};
+    MBUGenerator mbu_generator = MBUGenerator(signals, opts.mbu_radius);
     FaultCampaignWriter writer{formatter};
 
     if (opts.campaign_number == 1) {
-        generate_single_campaign({
-            .strategy = opts.strategy,
-            .signals = signals,
-            .writer = writer,
-            .output_file = opts.fault_campaign_out,
-        });
+        generate_single_campaign(
+            {.strategy = opts.strategy,
+             .signals = signals,
+             .writer = writer,
+             .output_file = opts.fault_campaign_out,
+             .mbu_generator = mbu_generator}
+        );
         return;
     }
 
@@ -129,6 +138,7 @@ void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signa
         signals,
         writer,
         opts.fault_campaign_out,
+        mbu_generator,
         opts.strategy->config.seed,
         opts.campaign_number
     );

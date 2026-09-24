@@ -34,6 +34,14 @@ target_link_libraries(TestConfigReading
 )
 add_test(NAME unit.generation.gtest.configReading  COMMAND TestConfigReading)
 
+#==============================================================================
+#==============================================================================
+#==============================================================================
+add_executable(TestMBUGenerator TestMBUGenerator.cpp)
+target_link_libraries(TestMBUGenerator PRIVATE FaultGeneratorTestMain)
+target_compile_definitions(TestMBUGenerator PRIVATE TEST_DATA_DIR="${TEST_DATA_DIR}")
+add_test(NAME unit.generation.mbu COMMAND TestMBUGenerator)
+
 
 #==============================================================================
 #==============================================================================

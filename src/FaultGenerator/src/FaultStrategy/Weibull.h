@@ -58,7 +58,7 @@ class WeibullStrategy final : public FaultStrategy {
    public:
     explicit WeibullStrategy(const Config&, const WeibullConfig&);
 
-    std::vector<FaultEvent> generate(std::span<const Signal>) override;
+    std::vector<FaultEvent> generate(const MBUGenerator&, std::span<const Signal>) override;
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:

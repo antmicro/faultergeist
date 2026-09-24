@@ -16,25 +16,23 @@
 
 #pragma once
 
-#include "FaultStrategy/FaultStrategy.h"
+#include "FaultStrategy.h"
+#include "PlacementMap.h"
+#include "UnitUtils.h"
 
-#include <memory>
-#include <string>
+#include <optional>
 
-struct GlobalOpts final {
-    std::string sig_path_prefix;
-    std::string top_module;
-    std::string top_instance;
-    std::string netlist_path;
-    std::string placement_info_path;
-    std::string fault_campaign_out;
-    std::uint64_t campaign_number;
-    std::shared_ptr<FaultStrategy> strategy;
-    std::vector<std::string> liberty_paths;
-    unit::AREA liberty_area_scale;
-    std::optional<std::string> vlt_config;
-    std::string cell_area_json_path;
-    std::optional<unit::DIST> mbu_radius;
+struct Signal;
 
-    static GlobalOpts parseCmdArgs(int argc, char** argv);
+class MBUGenerator {
+   public:
+    const std::optional<unit::DIST> mbu_sigma;
+    const PlacementMap placement_map;
+
+   public:
+    MBUGenerator() = default;
+    MBUGenerator(std::span<const Signal>, std::optional<unit::DIST> mbu_radius);
+
+    const Signal* generateSecondaryFault(FaultStrategy::RandomGen&, const Signal& primarySignal)
+        const;
 };

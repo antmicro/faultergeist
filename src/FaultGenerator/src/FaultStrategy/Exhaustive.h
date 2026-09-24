@@ -32,7 +32,7 @@ class ExhaustiveStrategy : public FaultStrategy {
     const ExhaustiveConfig exhaustive_config;
 
     explicit ExhaustiveStrategy(const Config&, const ExhaustiveConfig&);
-    std::vector<FaultEvent> generate(std::span<const Signal>) override;
+    std::vector<FaultEvent> generate(const MBUGenerator&, std::span<const Signal>) override;
 
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 };

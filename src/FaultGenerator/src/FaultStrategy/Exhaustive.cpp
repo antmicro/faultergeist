@@ -45,7 +45,10 @@ void populateFaults(
 }
 }  // namespace
 
-std::vector<FaultEvent> ExhaustiveStrategy::generate(std::span<const Signal> signals) {
+std::vector<FaultEvent> ExhaustiveStrategy::generate(
+    const MBUGenerator&,
+    std::span<const Signal> signals
+) {
     std::vector<FaultEvent> fault_events;
 
     switch (exhaustive_config.fault_type) {

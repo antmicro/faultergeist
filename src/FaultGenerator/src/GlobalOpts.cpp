@@ -26,6 +26,7 @@
 #include <absl/flags/usage_config.h>
 #include <nlohmann/json.hpp>
 
+#include <cmath>
 #include <fstream>
 
 ABSL_FLAG(std::string, sig_path_prefix, "", "Prefix for signal paths, i.e. `top`.");
@@ -118,6 +119,14 @@ ABSL_FLAG(
     "File path of where to print config of which signals verilator should expose. In absence of "
     "this flag, config isn't written at all."
 );
+ABSL_FLAG(
+    std::string,
+    mbu_radius,
+    "",
+    "Radius containing 95% of sampled secondary MBU points, measured from the primary cell "
+    "center (e.g. 2.5um). Larger radii spread hits farther away; this is not a hard cutoff. "
+    "Must be finite and positive. Requires '--placement_info_path'."
+);
 
 namespace {
 
@@ -125,7 +134,7 @@ std::uint32_t clampThreadNumber(std::uint32_t thread_number) {
     return std::max(1u, thread_number);
 }
 
-unit::SIM_TIME parse_simulation_time(std::string_view sim_time_str) {
+unit::SIM_TIME getSimulationTime(std::string_view sim_time_str) {
     if (sim_time_str.empty()) {
         return simulation_time_default;
     }
@@ -165,6 +174,30 @@ unit::AREA getLibertyAreaScale(std::string_view area_scale_str) {
     LOG(WARNING) << "Unrecognized liberty area scale unit: '" << unit
                  << "'. Using default value: " << std::format("{}", default_liberty_area_scale);
     return default_liberty_area_scale;
+}
+
+std::optional<unit::DIST> getMBURadius(std::string_view mbu_radius_str) {
+    if (mbu_radius_str.empty()) {
+        return std::nullopt;
+    }
+
+    auto parsed = unit::parseQuantity(mbu_radius_str);
+    if (!parsed) {
+        LOG(WARNING) << "Failed to parse MBU radius. Disabling the feature.";
+        return std::nullopt;
+    }
+
+    auto [value, unit] = *parsed;
+    if (auto result = unit::normalizeDist(value, unit)) {
+        const double radius = result->numerical_value_in(unit::DIST::unit);
+        if (std::isfinite(radius) && radius > 0) {
+            return result;
+        }
+        LOG(WARNING) << "MBU radius must be finite and positive. Disabling the feature.";
+        return std::nullopt;
+    }
+    LOG(WARNING) << "Unrecognized MBU radius unit. Disabling the feature.";
+    return std::nullopt;
 }
 
 void configureUsageMessage() {
@@ -212,11 +245,10 @@ void from_json(const nlohmann::json& json, FaultStrategy::Config& config) {
 
     if (absl::GetFlag(FLAGS_simulation_time)) {
         VLOG(2) << "Config.simulation_time set from flag";
-        config.simulation_time =
-            parse_simulation_time(absl::GetFlag(FLAGS_simulation_time).value());
+        config.simulation_time = getSimulationTime(absl::GetFlag(FLAGS_simulation_time).value());
     } else {
         VLOG(2) << "Config.simulation_time set from json/default";
-        config.simulation_time = parse_simulation_time(json.value("simulation_time", ""));
+        config.simulation_time = getSimulationTime(json.value("simulation_time", ""));
     }
 
     if (absl::GetFlag(FLAGS_thread_number)) {
@@ -291,6 +323,14 @@ void from_json(const nlohmann::json& json, GlobalOpts& opts) {
     } else {
         opts.liberty_area_scale = default_liberty_area_scale;
     }
+
+    if (!absl::GetFlag(FLAGS_mbu_radius).empty()) {
+        VLOG(2) << "GlobalOpts.mbu_radius set from flag";
+        opts.mbu_radius = getMBURadius(absl::GetFlag(FLAGS_mbu_radius));
+    } else {
+        VLOG(2) << "GlobalOpts.mbu_radius set from json/default";
+        opts.mbu_radius = getMBURadius(params.value("mbu_radius", ""));
+    }
 }
 
 GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
@@ -303,7 +343,7 @@ GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
         FaultStrategy::Config config = {
             absl::GetFlag(FLAGS_num_of_events).value_or(num_of_events_default),
             absl::GetFlag(FLAGS_seed).value_or(seed_default),
-            parse_simulation_time(absl::GetFlag(FLAGS_simulation_time).value_or("")),
+            getSimulationTime(absl::GetFlag(FLAGS_simulation_time).value_or("")),
             clampThreadNumber(absl::GetFlag(FLAGS_thread_number).value_or(thread_number_default))
         };
 
@@ -337,6 +377,7 @@ GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
             .liberty_area_scale = liberty_area_scale,
             .vlt_config = absl::GetFlag(FLAGS_vlt_config),
             .cell_area_json_path = absl::GetFlag(FLAGS_cell_area_json_path),
+            .mbu_radius = getMBURadius(absl::GetFlag(FLAGS_mbu_radius))
         };
     } else {
         try {

@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "FaultEvent.h"
+#include "FaultStrategy/MBUGenerator.h"
 #include "FaultStrategy/Weibull.h"
 #include "TestUtils.h"
 
@@ -158,7 +159,7 @@ TEST(WeibullGenerationTest, CountsWithinTolerance) {
 
     for (std::size_t i = 0; i < expected_counts.size(); ++i) {
         WeibullStrategy strategy{config, WeibullConfig{{streams[i]}}};
-        std::vector<FaultEvent> stream_events = strategy.generate(signals);
+        std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
         std::uint64_t count = stream_events.size();
         std::uint64_t expected = expected_counts[i];
         all_events.insert(all_events.end(), stream_events.begin(), stream_events.end());
@@ -304,7 +305,7 @@ TEST(WeibullGenerationTest, WhenInParallelResultIsSorted) {
          }};
 
     WeibullStrategy strategy{config, weibull_config};
-    std::vector<FaultEvent> stream_events = strategy.generate(signals);
+    std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
     ASSERT_TRUE(std::is_sorted(stream_events.begin(), stream_events.end()));
 }

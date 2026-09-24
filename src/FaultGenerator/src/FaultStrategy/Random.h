@@ -26,7 +26,7 @@
 class RandomStrategy final : public FaultStrategy {
    public:
     explicit RandomStrategy(const Config&);
-    std::vector<FaultEvent> generate(std::span<const Signal>) override;
+    std::vector<FaultEvent> generate(const MBUGenerator&, std::span<const Signal>) override;
 
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 };
