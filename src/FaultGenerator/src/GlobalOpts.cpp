@@ -22,6 +22,8 @@
 
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/flags/usage.h>
+#include <absl/flags/usage_config.h>
 #include <nlohmann/json.hpp>
 
 #include <fstream>
@@ -40,7 +42,7 @@ ABSL_FLAG(
     std::optional<std::string>,
     simulation_time,
     std::nullopt,
-    "Total duration of the simulation."
+    "Total duration of the simulation. When not specified, defaults to 1000s."
 );
 const unit::SIM_TIME simulation_time_default = 1000 * unit::s;
 ABSL_FLAG(
@@ -50,19 +52,27 @@ ABSL_FLAG(
     "Number of generated single-event effects. Setting it to [0] disables this limit."
 );
 const std::uint64_t num_of_events_default = 0;
-ABSL_FLAG(std::optional<std::uint32_t>, seed, std::nullopt, "Random seed.");
+ABSL_FLAG(
+    std::optional<std::uint32_t>,
+    seed,
+    std::nullopt,
+    "Random seed. When not specified, defaults to '42'."
+);
 const std::uint64_t seed_default = 42;
 ABSL_FLAG(
     std::optional<std::string>,
     fault_campaign_out,
     std::nullopt,
-    "Path for generated fault campaign file."
+    "Path for generated fault campaign file. When not specified, defaults to "
+    "'fault_campaign_out.csv'."
 );
+const char* fault_campaign_out_file_defualt = "fault_campaign_out.csv";
+const char* fault_campaign_out_directory_defualt = "fault_campaign_out";
 ABSL_FLAG(
     std::string,
     config_file,
     "",
-    "Path to configuration file. If this flag is present, all others are ignored."
+    "Path to configuration file. When this flag is provided, most flags are ignored."
 );
 ABSL_FLAG(
     std::uint64_t,
@@ -71,10 +81,13 @@ ABSL_FLAG(
     "Number of campaigns to generate. If number is greater than 1, `--fault_campaign_out` is "
     "treated as a directory"
 );
-ABSL_FLAG(std::optional<std::uint32_t>, thread_number, std::nullopt, "Number of threads to use.");
+ABSL_FLAG(
+    std::optional<std::uint32_t>,
+    thread_number,
+    std::nullopt,
+    "Number of threads to use. When not provided, defaults to '1'"
+);
 const std::uint32_t thread_number_default = 1;
-const char* fault_campaign_out_file_defualt = "fault_campaign_out.csv";
-const char* fault_campaign_out_directory_defualt = "fault_campaign_out";
 ABSL_FLAG(
     std::vector<std::string>,
     liberty_paths,
@@ -88,6 +101,7 @@ ABSL_FLAG(
     "Indicator as to how to treat sizes in liberty files. If '0.5mm2' is given,"
     " cell with area=1, will be treated as area=0.5mm2.\n"
     "Available units are: m2, cm2, mm2, um2, nm2."
+    "When not provided, defaults to '1um2'"
 );
 const unit::AREA default_liberty_area_scale = 1 * unit::um2;
 ABSL_FLAG(
@@ -151,6 +165,30 @@ unit::AREA getLibertyAreaScale(std::string_view area_scale_str) {
     LOG(WARNING) << "Unrecognized liberty area scale unit: '" << unit
                  << "'. Using default value: " << std::format("{}", default_liberty_area_scale);
     return default_liberty_area_scale;
+}
+
+void configureUsageMessage() {
+    absl::SetProgramUsageMessage(
+        "Generate fault-injection campaigns from a synthesized netlist.\n"
+        "Settings can be provided as command-line flags or loaded from JSON with --config_file."
+    );
+    absl::FlagsUsageConfig usage_config;
+
+    // NOTE: The magic below is to avoid absl printing the exact source file origin
+    // of flags, and instead say something more pleasant
+    usage_config.normalize_filename = [](absl::string_view filename) {
+        if (filename.ends_with("GlobalOpts.cpp")) {
+            return "faultergeist-gen";
+        }
+        return "";
+    };
+    usage_config.contains_help_flags = [](absl::string_view filename) {
+        return filename == "faultergeist-gen";
+    };
+    usage_config.contains_helpshort_flags = [](absl::string_view filename) {
+        return filename == "faultergeist-gen";
+    };
+    absl::SetFlagsUsageConfig(std::move(usage_config));
 }
 
 };  // namespace
@@ -256,6 +294,7 @@ void from_json(const nlohmann::json& json, GlobalOpts& opts) {
 }
 
 GlobalOpts GlobalOpts::parseCmdArgs(int argc, char** argv) {
+    configureUsageMessage();
     absl::ParseCommandLine(argc, argv);
     LogInitialize();
 
