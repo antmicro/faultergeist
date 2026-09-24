@@ -11,6 +11,7 @@ then
   echo "USAGE: $0 <search_root> <parser_bin>"
   echo "    search_root - where to start looking for lib files"
   echo "    parser_bin - path to parser binary"
+  echo "search_root = '$SEARCH_ROOT', parser_bin = '$PARSER_BIN'"
   exit 1
 fi
 
