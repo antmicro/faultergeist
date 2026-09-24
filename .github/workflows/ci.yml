@@ -60,6 +60,7 @@ jobs:
           key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-ccache-${{ github.job }}-
       - run: ccache --zero-stats
+      - run: git config --global --add safe.directory '*'
       - name: Build Yosys
         run: ci/build-yosys.sh
       - name: Show ccache statistics
@@ -141,6 +142,7 @@ jobs:
         with: {name: verilator}
       - uses: actions/download-artifact@v4.3.0
         with: {name: yosys}
+      - run: git config --global --add safe.directory '*'
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
       - name: Build and run unit and integration tests
@@ -179,6 +181,7 @@ jobs:
         with: {name: verilator}
       - uses: actions/download-artifact@v4.3.0
         with: {name: yosys}
+      - run: git config --global --add safe.directory '*'
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
       - name: Build and run worker end-to-end tests
@@ -215,6 +218,7 @@ jobs:
       - run: ccache --zero-stats
       - uses: actions/download-artifact@v4.3.0
         with: {name: verilator}
+      - run: git config --global --add safe.directory '*'
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar
       - name: Fetch OpenROAD parser corpus
