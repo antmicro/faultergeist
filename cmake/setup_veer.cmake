@@ -53,16 +53,28 @@ if(submodule_status MATCHES "(^|\n)[-+]")
   run("${GIT_EXECUTABLE}" submodule update --init --recursive .)
 endif()
 
-# Apply the VeeR preparation patch once.
+# Leave modified VeeR checkouts alone, including untracked files.
 execute_process(
-  COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${VEER_PATCH}"
+  COMMAND "${GIT_EXECUTABLE}" status --porcelain
   WORKING_DIRECTORY "${VEER_ROOT}"
-  RESULT_VARIABLE patch_applied
-  OUTPUT_QUIET ERROR_QUIET
+  RESULT_VARIABLE status_result
+  OUTPUT_VARIABLE veer_changes
 )
-if(NOT patch_applied EQUAL 0)
-  require_force("VeeR preparation patch")
-  run("${GIT_EXECUTABLE}" apply "${VEER_PATCH}")
+if(NOT status_result EQUAL 0)
+  message(FATAL_ERROR "Could not check VeeR checkout changes")
+endif()
+if(NOT veer_changes)
+  # Apply the VeeR preparation patch once.
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${VEER_PATCH}"
+    WORKING_DIRECTORY "${VEER_ROOT}"
+    RESULT_VARIABLE patch_applied
+    OUTPUT_QUIET ERROR_QUIET
+  )
+  if(NOT patch_applied EQUAL 0)
+    require_force("VeeR preparation patch")
+    run("${GIT_EXECUTABLE}" apply "${VEER_PATCH}")
+  endif()
 endif()
 
 # Create the VeeR virtualenv when it is missing.
