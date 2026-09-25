@@ -27,7 +27,7 @@ struct ExhaustiveConfig {
     FaultEventType fault_type = FaultEventType::SINGLE_EVENT_UPSET;
 };
 
-class ExhaustiveStrategy : public FaultStrategy {
+class ExhaustiveStrategy final : public FaultStrategy {
    public:
     const ExhaustiveConfig exhaustive_config;
 
