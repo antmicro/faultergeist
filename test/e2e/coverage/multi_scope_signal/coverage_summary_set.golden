@@ -1,6 +1,6 @@
 Coverage Summary:
   line      : 0.0% ( 0/ 0)
-  toggle    : 82.7% (43/52)
+  toggle    : 100.0% (52/52)
   branch    : 0.0% ( 0/ 0)
   expr      : 0.0% ( 0/ 0)
   fsm_state : 0.0% ( 0/ 0)
