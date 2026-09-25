@@ -10,7 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
   CXX: 'g++-14'
   CC: 'gcc-14'
 
@@ -20,6 +19,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -49,6 +49,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -91,6 +92,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -108,9 +110,7 @@ jobs:
         with: {name: yosys}
       - run: tar -xf verilator.tar && tar -xf yosys.tar
       - name: Run example
-        env:
-          VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: ci/run-example.sh
+        run: VERILATOR_ROOT=$GITHUB_WORKSPACE/verilator ci/run-example.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -127,6 +127,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -146,9 +147,7 @@ jobs:
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
       - name: Build and run unit and integration tests
-        env:
-          VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: ci/run-self-tests.sh
+        run: VERILATOR_ROOT=$GITHUB_WORKSPACE/verilator ci/run-self-tests.sh
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -166,6 +165,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 180
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -185,9 +185,7 @@ jobs:
       - run: git submodule update --init --recursive third_party/asap7
       - run: tar -xf verilator.tar && tar -xf yosys.tar
       - name: Build and run worker end-to-end tests
-        env:
-          VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: ci/run-e2e-tests.sh worker
+        run: VERILATOR_ROOT=$GITHUB_WORKSPACE/verilator ci/run-e2e-tests.sh worker
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
@@ -205,6 +203,7 @@ jobs:
     container: debian:trixie
     timeout-minutes: 120
     steps:
+      - run: echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
       - name: Install git
         run: apt-get -yq update > /dev/null && apt-get -yq install git
       - uses: actions/checkout@v4.2.2
@@ -224,9 +223,7 @@ jobs:
       - name: Fetch OpenROAD parser corpus
         run: git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD.git "$RUNNER_TEMP/OpenROAD"
       - name: Build and run parser tests
-        env:
-          VERILATOR_ROOT: ${{ github.workspace }}/verilator
-        run: ci/run-parser-tests.sh "$RUNNER_TEMP/OpenROAD/test" "${{ github.workspace }}/third_party/asap7"
+        run: VERILATOR_ROOT=$GITHUB_WORKSPACE/verilator ci/run-parser-tests.sh "$RUNNER_TEMP/OpenROAD/test" "$PWD/third_party/asap7"
       - name: Show ccache statistics
         if: always()
         run: ccache --show-stats
