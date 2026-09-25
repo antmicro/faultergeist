@@ -22,6 +22,7 @@
 #include "UnitUtils.h"
 
 #include <fstream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -79,7 +80,14 @@ PlacementInfo PlacementParser::parse(const std::string& path) {
     if (line == "name,type,width,height,x,y") {
         std::getline(file, line);
     }
-    auto header = parsePlacement(line);
+
+    std::optional<Placement> header_placement;
+    if (auto header = parsePlacement(line)) {
+        header_placement = header->placement;
+    } else if (!header) {
+        LOG(ERROR) << "Failed to parse PlacementInfo header.";
+        header_placement = std::nullopt;
+    }
 
     std::vector<CellPlacementInfo> result;
     while (std::getline(file, line)) {
@@ -90,5 +98,5 @@ PlacementInfo PlacementParser::parse(const std::string& path) {
         }
         result.push_back(*info);
     }
-    return {header->placement, result};
+    return {header_placement, result};
 }
