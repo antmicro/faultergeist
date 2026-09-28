@@ -53,6 +53,11 @@ PLI_DLLISPEC PLI_INT32 vpi_vprintf(PLI_BYTE8* format, va_list ap) {
     return vfprintf(stderr, format, ap);
 }
 
+PLI_DLLISPEC void vpi_get_time(vpiHandle, p_vpi_time time) {
+    time->high = 0;
+    time->low = 0;
+}
+
 PLI_DLLISPEC vpiHandle vpi_handle(PLI_INT32, vpiHandle) {
     UNEXPECTED_VPI_CALL();
 }

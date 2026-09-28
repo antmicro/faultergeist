@@ -17,15 +17,14 @@
 #include "Event.h"
 #include "EventParser.h"
 #include "EventRollback.h"
+#include "Logger.h"
 #include "ManagedVpiHandle.h"
-#include "Utils.h"
 
 #include "vpi_user.h"
 
 #include <bitset>
 #include <cassert>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <queue>
@@ -51,7 +50,7 @@ class FaultInjector {
         if (event_parser.ok()) {
             (void)simulateSingleEventEffects();
         } else {
-            fin_fatal("%%Error: Couldn't parse '%s'\n", input_file.c_str());
+            FI_FATAL("%%Error: Couldn't parse '%s'\n", input_file.c_str());
         }
     }
 
@@ -63,7 +62,7 @@ class FaultInjector {
    private:
     static bool checkCoverageTesting() { return std::getenv("FI_COVERAGE_TESTING") != nullptr; }
     ManagedVpiHandle registerCb() {
-        fin_printf("- Registering cbNextSimTime callback\n");
+        FI_TRACE_UNTIMED("Registering cbNextSimTime callback");
 
         s_cb_data cb_data{};
         s_vpi_time time = {vpiSimTime, 0, 1, 0};
@@ -81,18 +80,11 @@ class FaultInjector {
         auto* self = reinterpret_cast<FaultInjector*>(data->user_data);
         auto t = getVpiTime();
         const std::uint64_t current_time = timeValue(t);
-        fin_printf(
-            const_cast<char*>("- [@%llu] %s iterating\n"),
-            static_cast<unsigned long long>(current_time),
-            cbReasonToString(data->reason)
-        );
+        FI_TRACE("%s iterating", cbReasonToString(data->reason));
 
         const std::uint64_t next_event_time = self->simulateSingleEventEffects();
         if (next_event_time == 0) {
-            fin_printf(
-                const_cast<char*>("- [@%llu] Last fault emitted\n"),
-                static_cast<unsigned long long>(current_time)
-            );
+            FI_INFO_TIMED("Last fault emitted");
             return 0;
         }
         const std::uint64_t next_time = next_event_time - current_time;
@@ -105,9 +97,8 @@ class FaultInjector {
         cb_data.time = &time;
         cb_data.user_data = reinterpret_cast<PLI_BYTE8*>(self);
 
-        fin_printf(
-            const_cast<char*>("- [@%llu] Registering next %s Callback, next event at @%llu\n"),
-            static_cast<unsigned long long>(current_time),
+        FI_TRACE(
+            "Registering next %s Callback, next event at @%llu",
             cbReasonToString(cb_data.reason),
             static_cast<unsigned long long>(next_event_time)
         );
@@ -117,13 +108,13 @@ class FaultInjector {
         return 0;
     }
 
-    void simulateSingleEventEffect(const s_vpi_time& time, const Event& event) {
+    void simulateSingleEventEffect(const Event& event) {
         switch (event.type) {
             case Event::Type::SingleEventTransientUpset:
-                simulateSingleEventTransient(time, event);
+                simulateSingleEventTransient(event);
                 break;
             case Event::Type::SingleEventUpset:
-                simulateSingleEventUpset(time, event);
+                simulateSingleEventUpset(event);
                 break;
         }
     }
@@ -144,13 +135,13 @@ class FaultInjector {
                 if (leftover_event->time > current_time) {
                     return leftover_event->time;
                 }
-                simulateSingleEventEffect(t, *leftover_event);
+                simulateSingleEventEffect(*leftover_event);
                 leftover_event.reset();
             } else {
                 if (transient_events.top().time > current_time) {
                     return transient_events.top().time;
                 }
-                simulateSingleEventTransientRollback(t, transient_events.top());
+                simulateSingleEventTransientRollback(transient_events.top());
                 transient_events.pop();
             }
         }
@@ -158,14 +149,14 @@ class FaultInjector {
             if (transient_events.top().time > current_time) {
                 return transient_events.top().time;
             }
-            simulateSingleEventTransientRollback(t, transient_events.top());
+            simulateSingleEventTransientRollback(transient_events.top());
             transient_events.pop();
         }
         return 0;
     }
 
-    void simulateSingleEventTransient(const s_vpi_time& time, const Event& event) {
-        fin_printf(const_cast<char*>("- [@%d] Simulating single-event transient\n"), time.low);
+    void simulateSingleEventTransient(const Event& event) {
+        FI_TRACE("Simulating single-event transient");
 
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
@@ -173,25 +164,22 @@ class FaultInjector {
         EventRollback transient{
             event.signal, event.time + 1 /*duration of transient effect*/, event.bit_idx, &vpi_value
         };
-        fin_printf(
-            const_cast<char*>("- [@%d] SET: saved copy of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SET: saved copy of %.*s: %s",
             (int)event.signal->path.size(),
             event.signal->path.data(),
             vpiVectorToString(transient.vpi_value, event.signal->vpi_width).data()
         );
-        fin_printf(
-            const_cast<char*>("- [@%d] SET: before flipping %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SET: before flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.signal->path.size(),
             event.signal->path.data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpiVectorToggleBit(vpi_value, event.bit_idx);
-        fin_printf(
-            const_cast<char*>("- [@%d] SET: after flipping %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SET: after flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.signal->path.size(),
             event.signal->path.data(),
@@ -203,25 +191,23 @@ class FaultInjector {
         transient_events.emplace(std::move(transient));
     }
 
-    void simulateSingleEventTransientRollback(const s_vpi_time& time, const EventRollback& event) {
-        fin_printf(const_cast<char*>("- [@%d] Rollback single-event transient\n"), time.low);
+    void simulateSingleEventTransientRollback(const EventRollback& event) {
+        FI_TRACE("Rollback single-event transient");
 
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
         vpi_get_value(event.handle(), &vpi_value);
 
-        fin_printf(
-            const_cast<char*>("- [@%d] SET: before rollback %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SET: before rollback %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpi_value = event.vpi_value;
-        fin_printf(
-            const_cast<char*>("- [@%d] SET: after rollback %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SET: after rollback %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
@@ -242,25 +228,23 @@ class FaultInjector {
 #endif
     }
 
-    void simulateSingleEventUpset(const s_vpi_time& time, const Event& event) {
-        fin_printf(const_cast<char*>("- [@%d] Simulating single-event upset\n"), time.low);
+    void simulateSingleEventUpset(const Event& event) {
+        FI_TRACE("Simulating single-event upset");
 
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
         vpi_get_value(event.signal->handle(), &vpi_value);
 
-        fin_printf(
-            const_cast<char*>("- [@%d] SEU: before flipping %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SEU: before flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
         vpiVectorToggleBit(vpi_value, event.bit_idx);
-        fin_printf(
-            const_cast<char*>("- [@%d] SEU: after flipping %d bit of %.*s: %s\n"),
-            time.low,
+        FI_TRACE(
+            "SEU: after flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
@@ -333,12 +317,12 @@ static std::unique_ptr<fin::FaultInjector> fi;
 extern "C" {
 
 void FaultergeistCreate(const char* input_file) {
-    std::printf("Faultergeist Init\n");
+    FI_TRACE_UNTIMED("Faultergeist Init");
     assert(!fi);
     fi = std::make_unique<fin::FaultInjector>(input_file);
 }
 void FaultergeistDestroy(void) {
-    std::printf("Faultergeist Teardown\n");
+    FI_TRACE_UNTIMED("Faultergeist Teardown");
     assert(fi);
     fi.reset();
 }

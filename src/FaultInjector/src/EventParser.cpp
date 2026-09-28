@@ -17,9 +17,9 @@
 #include "EventParser.h"
 
 #include "Event.h"
+#include "Logger.h"
 #include "Signal.h"
 #include "SignalCollector.h"
-#include "Utils.h"
 
 #include <cassert>
 #include <charconv>
@@ -43,11 +43,7 @@ EventParser::EventParser(const std::filesystem::path& scenario_filepath)
         std::pow(10.0, FEMTOSECONDS_TIME_PRECISION - vpi_get(vpiTimePrecision, nullptr));
     if (!scenario) {
         std::error_code ec(errno, std::generic_category());
-        fin_printf(
-            "%%Error: Failed to open file '%s': %s\n",
-            scenario_filepath.c_str(),
-            ec.message().c_str()
-        );
+        FI_ERROR("Failed to open file '%s': %s", scenario_filepath.c_str(), ec.message().c_str());
     }
 }
 
@@ -72,27 +68,25 @@ std::pair<const fin::Signal*, int> EventParser::resolveSignal(
             ']';
         const Signal* elem = signal(elem_name);
         if (!elem) {
-            fin_fatal("Cannot find array element %s!\n", elem_name.c_str());
+            FI_FATAL("Cannot find array element %s!", elem_name.c_str());
         }
         return resolveSignal(*elem, index % signal_to_resolve.underlying_elem_size);
     }
     if (signal_to_resolve.isStruct()) {
         if (index < 0 || index >= signal_to_resolve.vpi_width) {
-            fin_fatal("Bit index is outside struct %s!\n", signal_to_resolve.path.c_str());
+            FI_FATAL("Bit index is outside struct %s!", signal_to_resolve.path.c_str());
         }
         for (const auto& member : signal_to_resolve.struct_members) {
             if (index < member.size) {
                 const Signal* member_signal = signal(member.name);
                 if (!member_signal) {
-                    fin_fatal("Cannot find struct member %s!\n", member.name.c_str());
+                    FI_FATAL("Cannot find struct member %s!", member.name.c_str());
                 }
                 return resolveSignal(*member_signal, index);
             }
             index -= member.size;
         }
-        fin_fatal(
-            "Bit index did not match any %s struct member!\n", signal_to_resolve.path.c_str()
-        );
+        FI_FATAL("Bit index did not match any %s struct member!", signal_to_resolve.path.c_str());
     }
     return {&signal_to_resolve, index};
 }
@@ -121,7 +115,7 @@ std::string_view parseCommaSeparated(std::string_view& line) {
 
 std::optional<Event> EventParser::parse() {
     if (!std::getline(scenario, line_buffer)) {
-        fin_printf("%%Info: No more events to read\n");
+        FI_INFO_TIMED("No more events to read");
         return std::nullopt;
     }
     return parse(line_buffer);
@@ -156,17 +150,17 @@ std::optional<Event> EventParser::parse(std::string_view line) {
 
     auto it = signals.find(sig_path);
     if (it == signals.end()) {
-        fin_printf(
-            "%%Error: Unrecognized signal path: %.*s\n", (int)sig_path.size(), sig_path.data()
+        FI_ERROR(
+            "Ignoring event: unrecognized signal path: %.*s", (int)sig_path.size(), sig_path.data()
         );
-        fin_printf("Ignoring the event\n");
         return std::nullopt;
     }
     if (it->second.isStruct() && type == Event::Type::SingleEventTransientUpset) {
-        fin_printf(
-            "%%Unsupported: SET on unpacked struct: %.*s\n", (int)sig_path.size(), sig_path.data()
+        FI_WARNING(
+            "Ignoring event: Unsupported SET on unpacked struct: %.*s. ",
+            (int)sig_path.size(),
+            sig_path.data()
         );
-        fin_printf("Ignoring the event\n");
         return std::nullopt;
     }
 
@@ -186,8 +180,7 @@ std::optional<Event> EventParser::parse(std::string_view line) {
 }
 
 std::nullopt_t EventParser::printFailedToParseLineError() {
-    fin_printf("%%Error: Failed to parse event line: %s\n", line_buffer.c_str());
-    fin_printf("Ignoring the event\n");
+    FI_ERROR("Ignoring event: failed to parse event line: %s", line_buffer.c_str());
     return std::nullopt;
 }
 

@@ -15,11 +15,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "SignalCollector.h"
-#include "Utils.h"
+#include "Logger.h"
 
 #include "sv_vpi_user.h"
 #include "vpi_user.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -86,7 +87,7 @@ void SignalCollector::insertSignal(fin::Signal signal) {
 
 void SignalCollector::collectFromScope(vpiHandle scope_handle) {
     const char* scope_name = vpi_get_str(vpiName, scope_handle);
-    fin_printf(indent, const_cast<char*>("scope '%s'\n"), scope_name);
+    FI_TRACE_UNTIMED_INDENT(indent, "scope '%s'", scope_name);
 
     addIndent();
     vpiHandle signal_iter = vpi_iterate(vpiReg, scope_handle);
@@ -108,17 +109,18 @@ int SignalCollector::collectFromSignal(ManagedVpiHandle signal_handle, const cha
         case vpiStructVar:
             return collectFromStruct(std::move(signal_handle), name);
         default:
-            fin_printf(indent, "Unhandled vpi_type: %d, name: %s\n", vpi_type, name);
+            FI_WARNING_INDENT(indent, "Unhandled vpi_type: %d, name: %s", vpi_type, name);
             return 0;
     }
 }
 
 int SignalCollector::collectFromReg(ManagedVpiHandle handle, const char* name, int vpi_width) {
-    fin_printf(indent, "reg: %s, width: %d\n", name, vpi_width);
+    FI_TRACE_UNTIMED_INDENT(indent, "reg: %s, width: %d", name, vpi_width);
     const int range_min = findRangeMin(handle.handle(), vpiReg, vpi_width);
     if (vpi_width <= 0) {
-        fin_printf(indent, "%%Error: Failed discover signal '%s' of width %d\n", name, vpi_width);
-        fin_printf(indent, "Ignoring the signal\n");
+        FI_ERROR_INDENT(
+            indent, "Ignoring signal '%s': failed to discover width %d", name, vpi_width
+        );
         return 0;
     }
     insertSignal(fin::Signal{
@@ -132,7 +134,7 @@ int SignalCollector::collectFromReg(ManagedVpiHandle handle, const char* name, i
 }
 
 int SignalCollector::collectFromArray(ManagedVpiHandle handle, const char* name, int vpi_width) {
-    fin_printf(indent, "array: %s, size: %d\n", name, vpi_width);
+    FI_TRACE_UNTIMED_INDENT(indent, "array: %s, size: %d", name, vpi_width);
     addIndent();
     const VPIRange array_range = VPIRange(handle.handle());
     int first_index = 0;
@@ -160,10 +162,12 @@ int SignalCollector::collectFromArray(ManagedVpiHandle handle, const char* name,
 }
 
 int SignalCollector::collectFromStruct(ManagedVpiHandle handle, const char* name) {
-    fin_printf(indent, "struct: %s, size: %d\n", name, vpi_get(vpiSize, handle.handle()));
+    FI_TRACE_UNTIMED_INDENT(
+        indent, "struct: %s, size: %d", name, vpi_get(vpiSize, handle.handle())
+    );
     vpiHandle member_iter = vpi_iterate(vpiMember, handle.handle());
     if (!member_iter) {
-        fin_printf(indent, "%%Error: Failed to discover members of struct '%s'\n", name);
+        FI_ERROR_INDENT(indent, "Failed to discover members of struct '%s'", name);
         return 0;
     }
 

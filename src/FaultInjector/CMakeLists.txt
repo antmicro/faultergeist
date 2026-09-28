@@ -4,7 +4,7 @@ if(ENABLE_WEXTRA)
   add_compile_options(-Werror -Wall -Wextra)
 endif()
 
-add_library(faultergeist-inject STATIC FaultInjector.cpp src/EventParser.cpp src/SignalCollector.cpp)
+add_library(faultergeist-inject STATIC FaultInjector.cpp src/EventParser.cpp src/SignalCollector.cpp src/Logger.cpp)
 
 target_include_directories(faultergeist-inject PRIVATE
   src/
