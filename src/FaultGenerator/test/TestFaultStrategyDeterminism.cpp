@@ -18,6 +18,7 @@
 #include "FaultEvent.h"
 #include "FaultEventsSignalFormatter.h"
 #include "FaultStrategy/Bendel.h"
+#include "FaultStrategy/Exhaustive.h"
 #include "FaultStrategy/FaultStrategy.h"
 #include "FaultStrategy/MBUGenerator.h"
 #include "FaultStrategy/Random.h"
@@ -39,8 +40,30 @@ const FaultStrategy::Config config{
     .simulation_time = 1000 * unit::s,
     .thread_number = 4
 };
+static constexpr std::string_view top_port_path_prefix = "TOP";
 
 const bool OVERRIDE_GOLDENFILES = false;
+
+TEST(ExhaustiveStrategy, AutoUsesSignalSpecificFaultTypes) {
+    std::vector<Signal> signals = {
+        createSignal("top", "state", 2),
+        createSignal("top", "request[0]", 1),
+    };
+    signals[1].type = SignalType::WIRE;
+    const ExhaustiveConfig exhaustive_config{.fault_type = FaultEventType::AUTO};
+    ExhaustiveStrategy strategy(config, exhaustive_config);
+
+    const auto events = strategy.generate(MBUGenerator{}, signals);
+
+    ASSERT_EQ(events.size(), 5);
+    EXPECT_EQ(events[0].type, FaultEventType::SINGLE_EVENT_UPSET);
+    EXPECT_EQ(events[1].type, FaultEventType::SINGLE_EVENT_UPSET);
+    EXPECT_EQ(events[2].type, FaultEventType::SINGLE_EVENT_TRANSIENT);
+    EXPECT_EQ(events[3].type, FaultEventType::SINGLE_EVENT_UPSET);
+    EXPECT_EQ(events[4].type, FaultEventType::SINGLE_EVENT_UPSET);
+    EXPECT_EQ(events[2].time, 0 * config.simulation_time);
+    EXPECT_EQ(events[3].time, 1 * config.simulation_time);
+}
 
 TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
     WeibullConfig weibull_config =
@@ -151,7 +174,9 @@ TEST(FaultGenerationShouldBeDeterministic, WeibullStrategy) {
     WeibullStrategy strategy{config, weibull_config};
     std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
-    FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
+    FaultCampaignWriter::FaultFormatter formatter(
+        FaultEventsSignalFormatter("", signals, top_port_path_prefix)
+    );
     std::stringstream actual;
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/weibull_campaign.csv.out");
@@ -194,7 +219,9 @@ TEST(FaultGenerationShouldBeDeterministic, BendelStrategy) {
     BendelStrategy strategy{config, bendel_config};
     std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
-    FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
+    FaultCampaignWriter::FaultFormatter formatter(
+        FaultEventsSignalFormatter("", signals, top_port_path_prefix)
+    );
     std::stringstream actual;
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/bendel_campaign.csv.out");
@@ -208,12 +235,14 @@ TEST(FaultGenerationShouldBeDeterministic, BendelStrategy) {
 }
 
 TEST(FaultGenerationShouldBeDeterministic, RandomStrategy) {
-    std::vector<Signal> signals = createSignals(10, 10 * unit::um2);
+    std::vector<Signal> signals = createSignalsWithWires(10, 10 * unit::um2);
 
     RandomStrategy strategy{config};
     std::vector<FaultEvent> stream_events = strategy.generate(MBUGenerator{}, signals);
 
-    FaultCampaignWriter::FaultFormatter formatter(FaultEventsSignalFormatter("", signals));
+    FaultCampaignWriter::FaultFormatter formatter(
+        FaultEventsSignalFormatter("", signals, top_port_path_prefix)
+    );
     std::stringstream actual;
     FaultCampaignWriter(formatter).write(actual, stream_events);
     std::ifstream expected(std::string(TEST_DATA_DIR) + "/random_campaign.csv.out");

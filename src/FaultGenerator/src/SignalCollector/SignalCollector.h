@@ -19,7 +19,11 @@
 #include <absl/log/check.h>
 #include <nlohmann/json.hpp>
 
+#include <span>
+#include <string>
 #include <string_view>
+#include <vector>
+#include "Utils.h"
 
 struct Cell;
 struct Signal;
@@ -30,10 +34,15 @@ class PlacementInfo;
 class SignalCollector {
     std::string_view top_module;
     std::string_view top_instance;
-    std::string_view prefix_path;
+    std::string combined_prefix_path;
+    bool top_is_design_top;
 
     const Liberty& liberty;
     const PlacementInfo& placement;
+    bool collect_wires;
+    std::string wire_attribute;
+    bool deduplicate_wires;
+    std::span<const std::string> clk_names;
 
    public:
     SignalCollector(
@@ -41,13 +50,22 @@ class SignalCollector {
         std::string_view top_instance,
         std::string_view prefix_path,
         const Liberty& liberty,
-        const PlacementInfo& placement
+        const PlacementInfo& placement,
+        bool collect_wires,
+        std::string_view wire_attribute,
+        bool deduplicate_wires,
+        std::span<const std::string> clk_names
     )
         : top_module(top_module),
           top_instance(top_instance),
-          prefix_path(prefix_path),
+          combined_prefix_path(combineSignalPath(prefix_path, top_instance)),
+          top_is_design_top(prefix_path.empty()),
           liberty(liberty),
-          placement(placement) {
+          placement(placement),
+          collect_wires(collect_wires),
+          wire_attribute(wire_attribute),
+          deduplicate_wires(deduplicate_wires),
+          clk_names(clk_names) {
         CHECK(!top_instance.empty())
             << "Empty top instance! Use --top_instance to specify it's name.";
     }
@@ -63,6 +81,7 @@ class SignalCollector {
         std::vector<Signal>& collected_signals,
         std::string_view current_path,
         std::vector<Module>& modules,
-        Module& module
+        Module& module,
+        bool is_design_top
     ) const;
 };

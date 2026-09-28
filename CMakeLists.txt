@@ -31,6 +31,7 @@ if(BUILD_TESTING)
   add_subdirectory(test/nested)
   add_subdirectory(test/nested_generate)
   add_subdirectory(test/range)
+  add_subdirectory(test/wires)
 endif()
 
 add_subdirectory(src/FaultGenerator)

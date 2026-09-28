@@ -205,13 +205,12 @@ class FaultInjector {
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_value = event.vpi_value;
         FI_TRACE(
             "SET: after rollback %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
-            vpiVectorToString(vpi_value, event.signal->vpi_width).data()
+            vpiVectorToString(event.vpi_value, event.signal->vpi_width).data()
         );
         vpi_put_value(event.handle(), &vpi_value, nullptr, vpiReleaseFlag);
 

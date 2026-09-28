@@ -58,6 +58,7 @@ endblock()
 fi_add_file_comparison(fi_e2e_worker_basic_bendel_vlt_config_compare
   "${JSON_VLT_CONFIG}"
   "${VERILOG_VLT_CONFIG}"
+  SORT
 )
 
 fi_add_ctest_scenario(e2e.worker.basic.bendel.vlt-config

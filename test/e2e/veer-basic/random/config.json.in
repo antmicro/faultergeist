@@ -4,6 +4,7 @@
     "params" : {}
   },
   "params": {
+    "collect_wires": false,
     "seed": 42,
     "num_of_events": 10000,
     "simulation_time": "22000ps",

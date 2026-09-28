@@ -23,16 +23,19 @@
 #include "SignalCollector/SlangModuleCollector.h"
 #include "SignalCollector/YosysModuleCollector.h"
 #include "TestUtils.h"
+#include "WireCollectionTestData.h"
 
 #include <gtest/gtest.h>
 #include <slang/syntax/SyntaxTree.h>
 #include <slang/text/SourceManager.h>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <set>
+#include <span>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -72,6 +75,10 @@ const PlacementInfo normal_placement{
         },
     }
 };
+const bool collect_wires = true;
+const std::string_view default_wire_attribute = "hdlname";
+const bool deduplicate_wires = true;
+const std::vector<std::string> clock_names = {"clk"};
 
 /******************************************************************************/
 /* YosysModuleCollector tests                                                 */
@@ -126,7 +133,16 @@ auto normal_json = R"json({
 TEST(YosysModuleCollectorTests, EmptyNetlist) {
     auto empty_json = R"json({})json"_json;
     ASSERT_DEATH(
-        { std::ignore = YosysModuleCollector(normal_liberty).collect(empty_json); },
+        {
+            std::ignore = YosysModuleCollector(
+                              normal_liberty,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
+            )
+                              .collect(empty_json);
+        },
         "Malformed netlist json"
     );
 }
@@ -140,7 +156,11 @@ TEST(YosysModuleCollectorTests, ModuleWithNoCells) {
     }
   }
 })json"_json;
-    auto modules = YosysModuleCollector(normal_liberty).collect(json_without_cells);
+    auto modules =
+        YosysModuleCollector(
+            normal_liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(json_without_cells);
     ASSERT_DEATH(
         {
             std::ignore = SignalCollector(
@@ -148,7 +168,11 @@ TEST(YosysModuleCollectorTests, ModuleWithNoCells) {
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
             )
                               .collectFromModules(modules);
         },
@@ -158,13 +182,21 @@ TEST(YosysModuleCollectorTests, ModuleWithNoCells) {
 
 TEST(YosysModuleCollectorTests, NormalNetlist) {
     const auto& json = normal_json;
-    auto modules = YosysModuleCollector(normal_liberty).collect(json);
+    auto modules =
+        YosysModuleCollector(
+            normal_liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(json);
     const auto& signals = SignalCollector(
                               normal_top_module,
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
     )
                               .collectFromModules(modules);
 
@@ -184,13 +216,21 @@ TEST(YosysModuleCollectorTests, EmptyLiberty) {
     const auto& json = normal_json;
     ASSERT_DEATH(
         {
-            auto modules = YosysModuleCollector({}).collect(json);
+            auto modules =
+                YosysModuleCollector(
+                    {}, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+                )
+                    .collect(json);
             const auto& signals = SignalCollector(
                                       normal_top_module,
                                       normal_top_instance,
                                       normal_sig_path_prefix,
                                       {},
-                                      normal_placement
+                                      normal_placement,
+                                      collect_wires,
+                                      default_wire_attribute,
+                                      deduplicate_wires,
+                                      clock_names
             )
                                       .collectFromModules(modules);
         },
@@ -284,7 +324,17 @@ class SlangModuleCollectorTests : public ::testing::Test {
 TEST_F(SlangModuleCollectorTests, EmptyNetlist) {
     auto tree = parseTree("");
     ASSERT_DEATH(
-        { std::ignore = SlangModuleCollector(normal_liberty).collect(tree); }, "No modules found"
+        {
+            std::ignore = SlangModuleCollector(
+                              normal_liberty,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
+            )
+                              .collect(tree);
+        },
+        "No modules found"
     );
 }
 
@@ -297,7 +347,11 @@ TEST_F(SlangModuleCollectorTests, ModuleWithNoCells) {
 module dff_worker(clk, req_vld, resp_rdy, req, req_rdy, resp_vld, resp, counter);
 endmodule)verilog";
     auto verilog = parseTree(verilog_without_cells);
-    auto modules = SlangModuleCollector(normal_liberty).collect(verilog);
+    auto modules =
+        SlangModuleCollector(
+            normal_liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(verilog);
     ASSERT_DEATH(
         {
             std::ignore = SignalCollector(
@@ -305,7 +359,11 @@ endmodule)verilog";
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
             )
                               .collectFromModules(modules);
         },
@@ -314,17 +372,25 @@ endmodule)verilog";
 }
 
 TEST_F(SlangModuleCollectorTests, NormalNetlist) {
-    auto modules = SlangModuleCollector(normal_liberty).collect(normal_tree());
+    auto modules =
+        SlangModuleCollector(
+            normal_liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(normal_tree());
     const auto& signals = SignalCollector(
                               normal_top_module,
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
     )
                               .collectFromModules(modules);
 
-    ASSERT_EQ(signals.size(), 2);
+    ASSERT_EQ(signals.size(), 38);
     EXPECT_EQ(signals[0].path_prefix, "top.worker");
     EXPECT_EQ(signals[0].cell.getPath(), "counter");
     EXPECT_EQ(signals[0].cell.width, 1);
@@ -333,23 +399,61 @@ TEST_F(SlangModuleCollectorTests, NormalNetlist) {
     EXPECT_EQ(signals[1].cell.getPath(), "resp");
     EXPECT_EQ(signals[1].cell.width, 1);
     EXPECT_EQ(signals[1].type, SignalType::REGISTER);
+    for (std::size_t index = 2; index < signals.size(); ++index) {
+        EXPECT_EQ(signals[index].type, SignalType::WIRE);
+    }
+    EXPECT_EQ(signals[2].cell.name, "req_vld[0]");
+    EXPECT_EQ(signals[4].cell.name, "req[0]");
+    EXPECT_EQ(signals[35].cell.name, "req[31]");
+    EXPECT_EQ(signals[36].cell.name, "req_rdy[0]");
+    EXPECT_EQ(signals[37].cell.name, "resp_vld[0]");
 }
 
 TEST_F(SlangModuleCollectorTests, EmptyLiberty) {
-    ASSERT_DEATH(
-        {
-            auto modules = SlangModuleCollector({}).collect(normal_tree());
-            const auto& signals = SignalCollector(
-                                      normal_top_module,
-                                      normal_top_instance,
-                                      normal_sig_path_prefix,
-                                      {},
-                                      normal_placement
-            )
-                                      .collectFromModules(modules);
-        },
-        "No signals found, cannot generate faults"
-    );
+    auto modules = SlangModuleCollector(
+                       {}, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+    )
+                       .collect(normal_tree());
+    const auto signals = SignalCollector(
+                             normal_top_module,
+                             normal_top_instance,
+                             normal_sig_path_prefix,
+                             {},
+                             normal_placement,
+                             collect_wires,
+                             default_wire_attribute,
+                             deduplicate_wires,
+                             clock_names
+    )
+                             .collectFromModules(modules);
+
+    ASSERT_EQ(signals.size(), 100);
+    EXPECT_TRUE(std::ranges::all_of(signals, [](const Signal& signal) {
+        return signal.type == SignalType::WIRE;
+    }));
+}
+
+TEST_F(SlangModuleCollectorTests, RemovesFlipFlopBitsFromNonZeroRange) {
+    auto verilog = parseTree(R"verilog(
+module top(input wire [6:4] state);
+  \$_DFFE_PP_ \state[5]$_DFFE_PP_  ();
+endmodule
+)verilog");
+
+    const auto modules =
+        SlangModuleCollector(
+            normal_liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(verilog);
+    ASSERT_EQ(modules.size(), 1);
+    ASSERT_EQ(modules[0].cells.size(), 1);
+    ASSERT_EQ(modules[0].wires.size(), 2);
+    EXPECT_EQ(modules[0].wires[0].name, "state[4]");
+    EXPECT_EQ(modules[0].wires[0].offset, 4);
+    EXPECT_EQ(modules[0].wires[1].name, "state[6]");
+    EXPECT_EQ(modules[0].wires[1].offset, 6);
+    EXPECT_TRUE(modules[0].wires[0].is_port);
+    EXPECT_TRUE(modules[0].wires[1].is_port);
 }
 
 /******************************************************************************/
@@ -373,7 +477,11 @@ TEST(SignalCollectorTests, EmptyTopModule) {
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
             )
                               .collectFromModules(modules);
         },
@@ -385,11 +493,18 @@ TEST(SignalCollectorTests, EmptyTopInstance) {
     auto modules = normal_modules;
     ASSERT_DEATH(
         {
-            std::ignore =
-                SignalCollector(
-                    normal_top_module, "", normal_sig_path_prefix, normal_liberty, normal_placement
-                )
-                    .collectFromModules(modules);
+            std::ignore = SignalCollector(
+                              normal_top_module,
+                              "",
+                              normal_sig_path_prefix,
+                              normal_liberty,
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
+            )
+                              .collectFromModules(modules);
         },
         "Empty top instance! Use --top_instance to specify it's name."
     );
@@ -397,11 +512,18 @@ TEST(SignalCollectorTests, EmptyTopInstance) {
 
 TEST(SignalCollectorTests, EmptySigPathPrefix) {
     auto modules = normal_modules;
-    const auto& signals =
-        SignalCollector(
-            normal_top_module, normal_top_instance, "", normal_liberty, normal_placement
-        )
-            .collectFromModules(modules);
+    const auto& signals = SignalCollector(
+                              normal_top_module,
+                              normal_top_instance,
+                              "",
+                              normal_liberty,
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
+    )
+                              .collectFromModules(modules);
 
     // Check if signals are there
     ASSERT_EQ(signals.size(), 2);
@@ -422,7 +544,11 @@ TEST(SignalCollectorTests, NormalNetlistWithPlacement) {
                               normal_top_instance,
                               normal_sig_path_prefix,
                               normal_liberty,
-                              normal_placement
+                              normal_placement,
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
     )
                               .collectFromModules(modules);
 
@@ -449,6 +575,48 @@ TEST(SignalCollectorTests, NormalNetlistWithPlacement) {
     EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->height, 6 * unit::DIST::unit);
     EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->x, 8 * unit::DIST::unit);
     EXPECT_QUANTITY_DOUBLE_EQ(signals[1].cell_placement->y, 7 * unit::DIST::unit);
+}
+
+TEST(SignalCollectorTests, MarksOnlySimulatorTopPortsAsTopLevel) {
+    const std::vector<Module> port_modules = {
+        {.name = "dut",
+         .child_modules = {},
+         .cells = {},
+         .wires = {{.name = "request[0]", .hdlname = "request", .width = 1, .is_port = true}}}
+    };
+
+    auto top_modules = port_modules;
+    const auto top_signals = SignalCollector(
+                                 "dut",
+                                 "top",
+                                 "",
+                                 {},
+                                 {},
+                                 collect_wires,
+                                 default_wire_attribute,
+                                 deduplicate_wires,
+                                 clock_names
+    )
+                                 .collectFromModules(top_modules);
+    ASSERT_EQ(top_signals.size(), 1);
+    EXPECT_TRUE(top_signals[0].is_top_level_port);
+
+    auto nested_modules = port_modules;
+    const auto nested_signals = SignalCollector(
+                                    "dut",
+                                    "dut",
+                                    "top.worker",
+                                    {},
+                                    {},
+                                    collect_wires,
+                                    default_wire_attribute,
+                                    deduplicate_wires,
+                                    clock_names
+    )
+                                    .collectFromModules(nested_modules);
+    ASSERT_EQ(nested_signals.size(), 1);
+    EXPECT_FALSE(nested_signals[0].is_top_level_port);
+    EXPECT_EQ(nested_signals[0].path_prefix, "top.worker.dut");
 }
 
 auto json_with_hdlname = R"json({
@@ -519,13 +687,24 @@ const PlacementInfo json_with_hdlname_placement{
 
 TEST(SignalCollectorMiscTests, NetlistWithHdlnameParsing) {
     const auto& json = json_with_hdlname;
-    auto modules = YosysModuleCollector(json_with_hdlname_liberty).collect(json);
+    auto modules = YosysModuleCollector(
+                       json_with_hdlname_liberty,
+                       collect_wires,
+                       default_wire_attribute,
+                       deduplicate_wires,
+                       clock_names
+    )
+                       .collect(json);
     const auto& signals = SignalCollector(
                               json_with_hdlname_top_module,
                               json_with_hdlname_top_instance,
                               json_with_hdlname_sig_path_prefix,
                               json_with_hdlname_liberty,
-                              {}
+                              {},
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
     )
                               .collectFromModules(modules);
 
@@ -586,13 +765,27 @@ TEST(SignalCollectorMiscTests, SlangMatchesYosysIgnoringAreaAndWidth) {
     }}};
 
     auto collector = SignalCollector(
-        normal_top_module, normal_top_instance, normal_sig_path_prefix, liberty, normal_placement
+        normal_top_module,
+        normal_top_instance,
+        normal_sig_path_prefix,
+        liberty,
+        normal_placement,
+        collect_wires,
+        default_wire_attribute,
+        deduplicate_wires,
+        clock_names
     );
     auto yosys_modules =
-        YosysModuleCollector(liberty).collectFromFile(std::string(WORKER_JSON_NETLIST));
+        YosysModuleCollector(
+            liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collectFromFile(std::string(WORKER_JSON_NETLIST));
     auto yosys_signals = collector.collectFromModules(yosys_modules);
     auto slang_modules =
-        SlangModuleCollector(liberty).collectFromFile(std::string(WORKER_VERILOG_NETLIST));
+        SlangModuleCollector(
+            liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collectFromFile(std::string(WORKER_VERILOG_NETLIST));
     auto slang_signals = collector.collectFromModules(slang_modules);
 
     ASSERT_EQ(slang_signals.size(), yosys_signals.size());
@@ -662,8 +855,22 @@ TEST(SignalCollectorMiscTests, NetlistWithLibertyCellIncluded) {
         "test",
         {{"my_cell", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}}},
     }}};
-    auto modules = YosysModuleCollector(liberty).collect(json);
-    const auto& signals = SignalCollector(top_module, top_instance, sig_path_prefix, liberty, {})
+    auto modules =
+        YosysModuleCollector(
+            liberty, collect_wires, default_wire_attribute, deduplicate_wires, clock_names
+        )
+            .collect(json);
+    const auto& signals = SignalCollector(
+                              top_module,
+                              top_instance,
+                              sig_path_prefix,
+                              liberty,
+                              {},
+                              collect_wires,
+                              default_wire_attribute,
+                              deduplicate_wires,
+                              clock_names
+    )
                               .collectFromModules(modules);
 
     // Check if signals is there
@@ -675,3 +882,207 @@ TEST(SignalCollectorMiscTests, NetlistWithLibertyCellIncluded) {
     EXPECT_EQ(signals[0].cell.hdlname, "dff_worker0 counter$dff");
     EXPECT_EQ(signals[0].type, SignalType::REGISTER);
 }
+
+enum class NetlistBackend {
+    YOSYS,
+    SLANG,
+};
+
+class WireCollectionTests : public testing::TestWithParam<NetlistBackend> {
+   protected:
+    const std::string_view top_module = "worker";
+    const std::string_view top_instance = "worker";
+    const std::string_view sig_path_prefix = "top";
+    const Liberty liberty = {{LibertyInfo{
+        "test",
+        {{"my_cell", {.area = 10.0 * unit::AREA::unit, .ff_info = FlipFlopInfo{}}}},
+    }}};
+
+    nlohmann::json json = nlohmann::json::parse(wire_collection_test::json);
+    std::string verilog{wire_collection_test::verilog};
+
+    slang::SourceManager source_manager;
+
+    std::vector<Module> collectModules(
+        bool collect,
+        std::string_view attribute,
+        bool deduplicate,
+        std::span<const std::string> clocks
+    ) {
+        if (GetParam() == NetlistBackend::YOSYS) {
+            return YosysModuleCollector(liberty, collect, attribute, deduplicate, clocks)
+                .collect(json);
+        }
+
+        auto tree = slang::syntax::SyntaxTree::fromFileInMemory(
+            verilog, source_manager, "wire_collection.sv"
+        );
+        return SlangModuleCollector(liberty, collect, attribute, deduplicate, clocks).collect(tree);
+    }
+
+    std::vector<Signal> collectSignals(
+        bool collect,
+        std::string_view attribute,
+        bool deduplicate,
+        std::span<const std::string> clocks
+    ) {
+        auto modules = collectModules(collect, attribute, deduplicate, clocks);
+        return SignalCollector(
+                   top_module,
+                   top_instance,
+                   sig_path_prefix,
+                   liberty,
+                   /*placement=*/{},
+                   collect,
+                   attribute,
+                   deduplicate,
+                   clocks
+        )
+            .collectFromModules(modules);
+    }
+
+    void expectSignals(
+        const std::vector<Signal>& signals,
+        std::vector<std::pair<std::string, SignalType>> expected
+    ) {
+        std::vector<std::pair<std::string, SignalType>> actual;
+        actual.reserve(signals.size());
+        for (const auto& signal : signals) {
+            actual.emplace_back(signal.cell.name, signal.type);
+        }
+        std::ranges::sort(actual);
+        std::ranges::sort(expected);
+        EXPECT_EQ(actual, expected);
+    }
+};
+
+// Default wire collection:
+// - wire collection is enabled,
+// - wires driven by flip-flops are deduplicated,
+// - clock is excluded,
+// - wires without `hdlname` are omitted.
+TEST_P(WireCollectionTests, DefaultWireCollection) {
+    const auto signals =
+        collectSignals(collect_wires, default_wire_attribute, deduplicate_wires, clock_names);
+
+    expectSignals(
+        signals,
+        {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER},
+         {"out[0]", SignalType::WIRE},
+         {"out[1]", SignalType::WIRE},
+         {"out[2]", SignalType::WIRE},
+         {"out[3]", SignalType::WIRE},
+         {"range_wire[8]", SignalType::WIRE},
+         {"range_wire[9]", SignalType::WIRE},
+         {"range_wire[10]", SignalType::WIRE},
+         {"range_wire[11]", SignalType::WIRE},
+         {"range_wire[12]", SignalType::WIRE},
+         {"range_wire[13]", SignalType::WIRE},
+         {"range_wire[14]", SignalType::WIRE},
+         {"range_wire[15]", SignalType::WIRE}}
+    );
+}
+
+TEST_P(WireCollectionTests, NoWireCollection) {
+    const auto signals = collectSignals(
+        /*collect=*/false, default_wire_attribute, deduplicate_wires, clock_names
+    );
+
+    expectSignals(signals, {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER}});
+}
+
+TEST_P(WireCollectionTests, CollectsAllWiresWithEmptyAttribute) {
+    constexpr std::string_view wire_attribute = "";
+    const auto signals =
+        collectSignals(collect_wires, wire_attribute, deduplicate_wires, clock_names);
+
+    expectSignals(
+        signals,
+        {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER},
+         {"out[0]", SignalType::WIRE},
+         {"out[1]", SignalType::WIRE},
+         {"out[2]", SignalType::WIRE},
+         {"out[3]", SignalType::WIRE},
+         {"range_wire[8]", SignalType::WIRE},
+         {"range_wire[9]", SignalType::WIRE},
+         {"range_wire[10]", SignalType::WIRE},
+         {"range_wire[11]", SignalType::WIRE},
+         {"range_wire[12]", SignalType::WIRE},
+         {"range_wire[13]", SignalType::WIRE},
+         {"range_wire[14]", SignalType::WIRE},
+         {"range_wire[15]", SignalType::WIRE},
+         {"synth_wire[0]", SignalType::WIRE}}
+    );
+}
+
+TEST_P(WireCollectionTests, CollectsWiresWithCustomAttribute) {
+    constexpr std::string_view wire_attribute = "keep";
+    const auto signals =
+        collectSignals(collect_wires, wire_attribute, /*deduplicate=*/false, clock_names);
+
+    expectSignals(
+        signals,
+        {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER},
+         {"out[0]", SignalType::WIRE},
+         {"out[1]", SignalType::WIRE},
+         {"out[2]", SignalType::WIRE},
+         {"out[3]", SignalType::WIRE},
+         {"synth_wire[0]", SignalType::WIRE}}
+    );
+}
+
+TEST_P(WireCollectionTests, KeepsFlipFlopWiresWithoutDeduplication) {
+    const auto signals =
+        collectSignals(collect_wires, default_wire_attribute, /*deduplicate=*/false, clock_names);
+
+    expectSignals(
+        signals,
+        {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER},
+         {"dff_worker0.counter[0]", SignalType::WIRE},
+         {"out[0]", SignalType::WIRE},
+         {"out[1]", SignalType::WIRE},
+         {"out[2]", SignalType::WIRE},
+         {"out[3]", SignalType::WIRE},
+         {"range_wire[8]", SignalType::WIRE},
+         {"range_wire[9]", SignalType::WIRE},
+         {"range_wire[10]", SignalType::WIRE},
+         {"range_wire[11]", SignalType::WIRE},
+         {"range_wire[12]", SignalType::WIRE},
+         {"range_wire[13]", SignalType::WIRE},
+         {"range_wire[14]", SignalType::WIRE},
+         {"range_wire[15]", SignalType::WIRE}}
+    );
+}
+
+TEST_P(WireCollectionTests, CollectsClockWithoutClockNames) {
+    const std::vector<std::string> no_clock_names;
+    const auto signals =
+        collectSignals(collect_wires, default_wire_attribute, deduplicate_wires, no_clock_names);
+
+    expectSignals(
+        signals,
+        {{"dff_worker0.counter[0]$my_cell", SignalType::REGISTER},
+         {"clk[0]", SignalType::WIRE},
+         {"out[0]", SignalType::WIRE},
+         {"out[1]", SignalType::WIRE},
+         {"out[2]", SignalType::WIRE},
+         {"out[3]", SignalType::WIRE},
+         {"range_wire[8]", SignalType::WIRE},
+         {"range_wire[9]", SignalType::WIRE},
+         {"range_wire[10]", SignalType::WIRE},
+         {"range_wire[11]", SignalType::WIRE},
+         {"range_wire[12]", SignalType::WIRE},
+         {"range_wire[13]", SignalType::WIRE},
+         {"range_wire[14]", SignalType::WIRE},
+         {"range_wire[15]", SignalType::WIRE}}
+    );
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NetlistBackends,
+    WireCollectionTests,
+    testing::Values(NetlistBackend::YOSYS, NetlistBackend::SLANG),
+    [](const testing::TestParamInfo<NetlistBackend>& info) {
+        return info.param == NetlistBackend::YOSYS ? "Yosys" : "Slang";
+    }
+);

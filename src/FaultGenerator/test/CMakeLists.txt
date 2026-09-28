@@ -106,6 +106,17 @@ add_test(NAME unit.generation.gtest.signalCollector COMMAND TestSignalCollector)
 #==============================================================================
 #==============================================================================
 #==============================================================================
+add_executable(TestFaultStrategyExhaustive TestFaultStrategyExhaustive.cpp)
+target_link_libraries(TestFaultStrategyExhaustive
+  PRIVATE
+    FaultGeneratorTestMain
+    slang::slang
+)
+add_test(NAME unit.generation.gtest.faultStrategyExhaustive COMMAND TestFaultStrategyExhaustive)
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
 add_executable(TestFaultEventsSignalFormatter TestFaultEventsSignalFormatter.cpp)
 target_link_libraries(TestFaultEventsSignalFormatter
   PRIVATE

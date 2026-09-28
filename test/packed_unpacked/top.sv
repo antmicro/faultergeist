@@ -7,10 +7,10 @@ module top (
   Faultergeist fi (`FAULT_INJECTION_CAMPAIGN_FILE);
 `endif
   (* keep = 1 *)
-  reg [31:0] [1:0] packed_counter /*verilator forceable*/;
+  reg [31:0] [1:0] packed_counter;
 
   (* keep = 1 *)
-  reg [31:0] unpacked_counter [1:0]/*verilator forceable*/;
+  reg [31:0] unpacked_counter [1:0];
 
   always @(posedge clk) begin
     packed_counter <= packed_counter + 1;

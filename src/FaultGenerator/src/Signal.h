@@ -50,6 +50,7 @@ struct Signal {
     unit::AREA area;
     std::optional<Placement> cell_placement;
     SignalType type = SignalType::UNKNOWN;
+    bool is_top_level_port = false;
 
     friend std::ostream& operator<<(std::ostream& os, const Signal& signal) {
         os << "{ .path_prefix=" << signal.path_prefix;

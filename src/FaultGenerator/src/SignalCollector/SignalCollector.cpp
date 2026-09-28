@@ -24,9 +24,11 @@
 #include "Module.h"
 #include "Signal.h"
 #include "SlangModuleCollector.h"
+#include "UnitUtils.h"
 #include "Utils.h"
 #include "YosysModuleCollector.h"
 
+#include <optional>
 #include <sstream>
 #include <string_view>
 
@@ -35,10 +37,14 @@ std::vector<Signal> SignalCollector::collectFromFile(const std::filesystem::path
     VLOG(1) << "Collecting modules from '" << netlist << "'";
 
     if (netlist.extension() == ".json") {
-        YosysModuleCollector collector(liberty);
+        YosysModuleCollector collector(
+            liberty, collect_wires, wire_attribute, deduplicate_wires, clk_names
+        );
         collected_modules = collector.collectFromFile(netlist);
     } else if (netlist.extension() == ".v" || netlist.extension() == ".sv") {
-        SlangModuleCollector collector(liberty);
+        SlangModuleCollector collector(
+            liberty, collect_wires, wire_attribute, deduplicate_wires, clk_names
+        );
         collected_modules = collector.collectFromFile(netlist);
     } else {
         SEE_CHECK(false) << "Unknown netlist file extension: " << netlist;
@@ -52,11 +58,13 @@ std::vector<Signal> SignalCollector::collectFromModules(std::vector<Module>& col
 ) const {
     int top_module_index = findTopModule(collected_modules);
 
-    std::string starting_path = combineSignalPath(prefix_path, top_instance);
-
     std::vector<Signal> collected_signals;
     recursivelyCollectSignals(
-        collected_signals, starting_path, collected_modules, collected_modules[top_module_index]
+        collected_signals,
+        combined_prefix_path,
+        collected_modules,
+        collected_modules[top_module_index],
+        top_is_design_top
     );
 
     SEE_CHECK(!collected_signals.empty()) << "No signals found, cannot generate faults";
@@ -86,7 +94,8 @@ void SignalCollector::recursivelyCollectSignals(
     std::vector<Signal>& collected_signals,
     std::string_view current_path,
     std::vector<Module>& modules,
-    Module& module
+    Module& module,
+    bool is_design_top
 ) const {
     VLOG(1) << "Collecting signals for '" << module.name << "' under prefix: " << current_path;
     for (const Cell& cell : module.cells) {
@@ -106,9 +115,25 @@ void SignalCollector::recursivelyCollectSignals(
             SignalType::REGISTER
         );
     }
+    for (const Wire& wire : module.wires) {
+        collected_signals.emplace_back(
+            Cell{.name = wire.name, .type = "wire", .hdlname = wire.hdlname, .width = wire.width},
+            std::string{current_path},
+            /*area=*/unit::AREA{},
+            /*cell_placement=*/std::nullopt,
+            SignalType::WIRE,
+            wire.is_port && is_design_top
+        );
+    }
 
     for (const auto& [instance_name, module_index] : module.child_modules) {
         std::string next_path = combineSignalPath(current_path, instance_name);
-        recursivelyCollectSignals(collected_signals, next_path, modules, modules[module_index]);
+        recursivelyCollectSignals(
+            collected_signals,
+            next_path,
+            modules,
+            modules[module_index],
+            /*is_design_top=*/false
+        );
     }
 }

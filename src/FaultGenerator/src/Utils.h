@@ -81,6 +81,23 @@ static std::optional<std::size_t> findLastNotEscapedDollarSign(std::string_view 
 }
 
 [[maybe_unused]]
+static std::string stripSignalNameFromCellType(std::string_view signal_path) {
+    if (auto dollar_pos = findLastNotEscapedDollarSign(signal_path)) {
+        return std::string{signal_path.substr(0, *dollar_pos)};
+    }
+    return std::string{signal_path};
+}
+
+[[maybe_unused]]
+static std::string_view findSignalName(std::string_view signal_path) {
+    auto dot_pos = signal_path.rfind('.');
+    if (dot_pos == signal_path.npos) {
+        return signal_path;
+    }
+    return signal_path.substr(dot_pos + 1);
+}
+
+[[maybe_unused]]
 static std::optional<double> stodOpt(std::string_view& num) {
     double result;
     const auto [ptr, ec] = std::from_chars(num.data(), num.data() + num.size(), result);

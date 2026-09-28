@@ -26,6 +26,7 @@ enum class FaultEventType : std::uint8_t {
     UNKNOWN = 0,
     SINGLE_EVENT_TRANSIENT,
     SINGLE_EVENT_UPSET,
+    AUTO,
 };
 
 inline FaultEventType faultEventType(SignalType signal_type) {

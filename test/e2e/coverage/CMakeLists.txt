@@ -22,7 +22,9 @@ function(fi_add_coverage_e2e_test NAME FAULT_TYPE)
 
   fi_add_fault_campaign(fi_e2e_coverage_${NAME}_${FAULT_TYPE}_campaign
     CONFIG_TEMPLATE "${COVERAGE_CONFIG_${FAULT_TYPE_UPPER}_TEMPLATE}"
-    DEPENDS fi_e2e_coverage_${NAME}_netlist
+    DEPENDS
+      fi_e2e_coverage_${NAME}_netlist
+      "${JSON_NETLIST}"
   )
 
   fi_add_verilated_sim(fi_e2e_coverage_${NAME}_${FAULT_TYPE}_sim
@@ -63,4 +65,5 @@ add_subdirectory(packed_unpacked)
 add_subdirectory(range)
 add_subdirectory(signal_widths)
 add_subdirectory(structs)
+add_subdirectory(wires)
 add_subdirectory(worker)

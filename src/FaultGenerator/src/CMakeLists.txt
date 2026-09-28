@@ -18,6 +18,7 @@ add_library(FaultGenerationToolLib
   SignalCollector/IsFlipFlopPredicate.cpp
   SignalCollector/SignalCollector.cpp
   SignalCollector/SlangModuleCollector.cpp
+  SignalCollector/Wire.cpp
   SignalCollector/YosysModuleCollector.cpp
 
   FaultCampaignWriter.cpp

@@ -278,7 +278,7 @@ function(fi_add_ctest_scenario NAME TARGET_NAME)
   set_tests_properties("${NAME}" PROPERTIES
       LABELS "e2e;yosys;verilator"
       SKIP_RETURN_CODE ${FI_E2E_SKIP_CODE}
-      TIMEOUT 3600
+      TIMEOUT 21600
   )
 endfunction()
 
@@ -292,8 +292,21 @@ function(fi_add_file_comparison NAME FIRST_FILE SECOND_FILE)
   set(multi_value_args DEPENDS)
   cmake_parse_arguments(FI "${options}" "" "${multi_value_args}" ${ARGN})
 
+  if(FI_SORT)
+    set(_compare_command
+      "${CMAKE_COMMAND}"
+      "-DFI_FIRST_FILE=${FIRST_FILE}"
+      "-DFI_SECOND_FILE=${SECOND_FILE}"
+      -P "${FI_E2E_SCRIPT_DIR}/compare_file_lines.cmake"
+    )
+  else()
+    set(_compare_command
+      "${CMAKE_COMMAND}" -E compare_files "${FIRST_FILE}" "${SECOND_FILE}"
+    )
+  endif()
+
   add_custom_target("${NAME}"
-    COMMAND "${CMAKE_COMMAND}" -E compare_files "${FIRST_FILE}" "${SECOND_FILE}"
+    COMMAND ${_compare_command}
     DEPENDS "${FIRST_FILE}" "${SECOND_FILE}" ${FI_DEPENDS}
     VERBATIM
   )

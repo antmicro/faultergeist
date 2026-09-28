@@ -69,7 +69,7 @@ void writeSignal(
     bool all_forceable,
     bool all_public_flat_rw
 ) {
-    if (all_public_flat_rw || signal.sig_type == SignalType::REGISTER) {
+    if (all_public_flat_rw || signal.sig_type != SignalType::UNKNOWN) {
         os << "public_flat_rw -module \"" << signal.mod << "\" -var \"" << signal.var << "\"\n";
     }
     if (all_forceable || signal.sig_type == SignalType::WIRE) {

@@ -58,6 +58,7 @@ endblock()
 fi_add_file_comparison(fi_e2e_worker_basic_weibull_vlt_config_compare
   "${JSON_VLT_CONFIG}"
   "${VERILOG_VLT_CONFIG}"
+  SORT
   DEPENDS
     fi_e2e_worker_basic_weibull_json_campaign
     fi_e2e_worker_basic_weibull_verilog_campaign

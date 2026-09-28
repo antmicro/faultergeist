@@ -52,6 +52,37 @@ std::vector<FaultEvent> ExhaustiveStrategy::generate(
     std::vector<FaultEvent> fault_events;
 
     switch (exhaustive_config.fault_type) {
+        case FaultEventType::AUTO:
+            fault_events.reserve(signals.size() * 2);
+            for (std::size_t i = 0; i < signals.size(); ++i) {
+                const auto& signal = signals[i];
+                const auto type = faultEventType(signal.type);
+                for (std::uint32_t bit = 0; bit < signal.cell.width; ++bit) {
+                    fault_events.emplace_back(FaultEvent{
+                        signals.begin() + i,
+                        0 * config.simulation_time,
+                        /*signal_path=*/"",
+                        bit,
+                        type
+                    });
+                }
+            }
+            for (std::size_t i = 0; i < signals.size(); ++i) {
+                const auto& signal = signals[i];
+                if (faultEventType(signal.type) != FaultEventType::SINGLE_EVENT_UPSET) {
+                    continue;
+                }
+                for (std::uint32_t bit = 0; bit < signal.cell.width; ++bit) {
+                    fault_events.emplace_back(FaultEvent{
+                        signals.begin() + i,
+                        1 * config.simulation_time,
+                        /*signal_path=*/"",
+                        bit,
+                        FaultEventType::SINGLE_EVENT_UPSET
+                    });
+                }
+            }
+            break;
         case FaultEventType::SINGLE_EVENT_UPSET:
             fault_events.reserve(signals.size() * 2);
             populateFaults(
@@ -68,7 +99,7 @@ std::vector<FaultEvent> ExhaustiveStrategy::generate(
             );
             break;
         default:
-            PLOG(ERROR) << "Unknown fault event type: " << exhaustive_config.fault_type;
+            LOG(WARNING) << "Unknown requested fault type in exhaustive strategy!";
     }
     return fault_events;
 }

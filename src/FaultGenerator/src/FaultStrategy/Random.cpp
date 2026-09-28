@@ -59,7 +59,7 @@ std::vector<FaultEvent> RandomStrategy::generate(
             /*signal_path=*/"",
             int_dist(
                 gen.random_generator,
-                std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
+                std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width - 1}
             ),
             faultEventType(signal.type)
         });

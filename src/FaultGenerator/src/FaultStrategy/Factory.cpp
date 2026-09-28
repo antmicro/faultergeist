@@ -102,6 +102,8 @@ void from_json(const nlohmann::json& json, ExhaustiveConfig& config) {
             config.fault_type = FaultEventType::SINGLE_EVENT_UPSET;
         } else if (fault_type == "set") {
             config.fault_type = FaultEventType::SINGLE_EVENT_TRANSIENT;
+        } else if (fault_type == "auto") {
+            config.fault_type = FaultEventType::AUTO;
         }
     }
 }

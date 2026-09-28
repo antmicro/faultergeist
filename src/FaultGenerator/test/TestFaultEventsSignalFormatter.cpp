@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+static constexpr std::string_view top_port_path_prefix = "TOP";
+
 TEST(FaultEventsSignalFormatter, NormalTest) {
     const std::vector<Signal> pre_synth_signals = {
         createSignal("top.worker", "counter", 32),
@@ -76,10 +78,10 @@ TEST(FaultEventsSignalFormatter, NormalTest) {
     const std::string_view prefix_path = "top";
 
     FaultCampaignWriter::FaultFormatter pre_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, pre_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, pre_synth_signals, top_port_path_prefix}
     );
     FaultCampaignWriter::FaultFormatter post_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, post_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, post_synth_signals, top_port_path_prefix}
     );
 
     std::stringstream pre_synth_sstream;
@@ -113,7 +115,7 @@ TEST(FaultEventsSignalFormatter, BracketFalsePositives) {
     const std::string_view prefix_path = "top";
 
     FaultCampaignWriter::FaultFormatter false_positive_formatter(
-        FaultEventsSignalFormatter{prefix_path, false_positives_signals}
+        FaultEventsSignalFormatter{prefix_path, false_positives_signals, top_port_path_prefix}
     );
     const std::vector<std::string> signal_paths = {
         combineSignalPath(
@@ -186,10 +188,10 @@ TEST(FaultEventsSignalFormatter, BothKindsOfBrackets) {
     const std::string_view prefix_path = "top";
 
     FaultCampaignWriter::FaultFormatter pre_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, pre_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, pre_synth_signals, top_port_path_prefix}
     );
     FaultCampaignWriter::FaultFormatter post_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, post_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, post_synth_signals, top_port_path_prefix}
     );
 
     std::stringstream pre_synth_sstream;
@@ -252,10 +254,10 @@ TEST(FaultEventsSignalFormatter, SignalsWithHdlname) {
     const std::string_view prefix_path = "top";
 
     FaultCampaignWriter::FaultFormatter pre_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, pre_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, pre_synth_signals, top_port_path_prefix}
     );
     FaultCampaignWriter::FaultFormatter post_synth_formatter(
-        FaultEventsSignalFormatter{prefix_path, post_synth_signals}
+        FaultEventsSignalFormatter{prefix_path, post_synth_signals, top_port_path_prefix}
     );
 
     std::stringstream pre_synth_sstream;
@@ -265,4 +267,29 @@ TEST(FaultEventsSignalFormatter, SignalsWithHdlname) {
     FaultCampaignWriter(post_synth_formatter).write(post_synth_sstream, post_synth_events);
 
     testStreams(pre_synth_sstream, post_synth_sstream);
+}
+
+TEST(FaultEventsSignalFormatter, GroupedSignalAlwaysUsesCollectedBitIndex) {
+    const std::vector<Signal> signals = {
+        createSignal("top.worker", "request[31]", 1),
+    };
+    const FaultEventsSignalFormatter formatter("top", signals, top_port_path_prefix);
+
+    const FaultEvent formatted = formatter(createFromSignal(signals, 0, 1, 1));
+
+    EXPECT_EQ(formatted.signal_path, "top.worker.request");
+    EXPECT_EQ(formatted.bit_index, 31);
+}
+
+TEST(FaultEventsSignalFormatter, TopPortUsesDefaultTopScope) {
+    std::vector<Signal> signals = {
+        createSignal("top", "request[3]", 1),
+    };
+    signals[0].is_top_level_port = true;
+    const FaultEventsSignalFormatter formatter("top", signals, top_port_path_prefix);
+
+    const FaultEvent formatted = formatter(createFromSignal(signals, 0, 1, 0));
+
+    EXPECT_EQ(formatted.signal_path, "TOP.request");
+    EXPECT_EQ(formatted.bit_index, 3);
 }

@@ -56,9 +56,13 @@ std::string getSignalPathFromHdlname(std::string_view prefix_path, std::string_v
 
 FaultEventsSignalFormatter::FaultEventsSignalFormatter(
     std::string_view prefix_path,
-    std::span<const Signal> signals
+    std::span<const Signal> signals,
+    std::string_view top_port_path_prefix
 )
-    : prefix_path(prefix_path), real_signals_cache(signals.size()), signals(signals) {
+    : prefix_path(prefix_path),
+      top_port_path_prefix(top_port_path_prefix),
+      real_signals_cache(signals.size()),
+      signals(signals) {
     for (std::size_t i = 0; i < signals.size(); i++) {
         insert(i, signals[i]);
     }
@@ -66,9 +70,15 @@ FaultEventsSignalFormatter::FaultEventsSignalFormatter(
 
 void FaultEventsSignalFormatter::insertUngrouped(std::size_t id, const Signal& signal) {
     real_signals_cache[id] = SignalData{
-        .path = combineSignalPath(signal.path_prefix, signal.cell.getPath()),
-        .hdlname = signal.cell.hdlname,
+        .path = combineSignalPath(
+            signal.is_top_level_port ? top_port_path_prefix : signal.path_prefix,
+            signal.cell.getPath()
+        ),
+        .hdlname = signal.is_top_level_port
+                       ? ""
+                       : getSignalPathFromHdlname(prefix_path, signal.cell.hdlname),
         .bit_idx = 0,
+        .grouped = false,
     };
 }
 
@@ -104,17 +114,22 @@ void FaultEventsSignalFormatter::insert(std::size_t id, const Signal& signal) {
     VLOG(2) << "[" << signal_name << "] grouped correctly as {" << real_signal_name << ", " << idx
             << "}";
     real_signals_cache[id] = SignalData{
-        .path = combineSignalPath(signal.path_prefix, real_signal_name),
-        .hdlname = getSignalPathFromHdlname(prefix_path, signal.cell.hdlname),
-        .bit_idx = idx
+        .path = combineSignalPath(
+            signal.is_top_level_port ? top_port_path_prefix : signal.path_prefix, real_signal_name
+        ),
+        .hdlname = signal.is_top_level_port
+                       ? ""
+                       : getSignalPathFromHdlname(prefix_path, signal.cell.hdlname),
+        .bit_idx = idx,
+        .grouped = true,
     };
 }
 
 FaultEvent FaultEventsSignalFormatter::operator()(FaultEvent event) const {
     std::size_t id = event.it - signals.begin();
-    auto& [path, hdlname, bit_idx] = real_signals_cache[id];
+    auto& [path, hdlname, bit_idx, grouped] = real_signals_cache[id];
     event.signal_path = hdlname.empty() ? path : hdlname;
-    if (event.bit_index == 0) {
+    if (grouped) {
         event.bit_index = bit_idx;
     }
     return event;

@@ -43,6 +43,9 @@ unit::TIME BendelStrategy::eventTime(
     const BendelConfig::Stream& stream,
     FaultStrategy::RandomGen& gen
 ) {
+    if (signal.type == SignalType::WIRE) {
+        return unit::TIME::max();
+    }
     thread_local std::exponential_distribution<double> dist;
 
     const double energy = stream.energy.numerical_value_in(unit::MeV);

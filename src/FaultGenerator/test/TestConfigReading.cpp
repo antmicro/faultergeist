@@ -45,9 +45,14 @@ TEST(RandomStrategyTests, JsonConfig) {
     "seed": 13,
     "simulation_time": "102ms",
     "sig_path_prefix": "top",
+    "top_port_path_prefix": "sim.dut",
     "top_module": "dff_worker",
     "top_instance": "worker",
     "netlist_path": "worker.json",
+    "collect_wires": false,
+    "wire_attribute": "keep",
+    "deduplicate_wires": false,
+    "clk_names": ["clk", "clock"],
     "vlt_config": "config-file.vlt",
     "fault_campaign_out": "random_file.csv",
     "liberty_area_scale": "26cm2",
@@ -61,9 +66,14 @@ TEST(RandomStrategyTests, JsonConfig) {
     ASSERT_NO_THROW({ actual = random_strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
+    EXPECT_EQ(actual.top_port_path_prefix, "sim.dut");
     EXPECT_EQ(actual.top_module, "dff_worker");
     EXPECT_EQ(actual.top_instance, "worker");
     EXPECT_EQ(actual.netlist_path, "worker.json");
+    EXPECT_FALSE(actual.collect_wires);
+    EXPECT_EQ(actual.wire_attribute, "keep");
+    EXPECT_FALSE(actual.deduplicate_wires);
+    EXPECT_EQ(actual.clk_names, (std::vector<std::string>{"clk", "clock"}));
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_EQ(actual.campaign_number, 26);
     EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 26 * unit::cm2);
@@ -110,9 +120,14 @@ TEST(WeibullStrategyTests, JsonConfig) {
     ASSERT_NO_THROW({ actual = weibull_strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
+    EXPECT_EQ(actual.top_port_path_prefix, "TOP");
     EXPECT_EQ(actual.top_module, "dff_worker");
     EXPECT_EQ(actual.top_instance, "worker");
     EXPECT_EQ(actual.netlist_path, "worker.json");
+    EXPECT_TRUE(actual.collect_wires);
+    EXPECT_EQ(actual.wire_attribute, "hdlname");
+    EXPECT_TRUE(actual.deduplicate_wires);
+    EXPECT_TRUE(actual.clk_names.empty());
     EXPECT_EQ(actual.fault_campaign_out, "random_file.csv");
     EXPECT_QUANTITY_DOUBLE_EQ(actual.liberty_area_scale, 17 * unit::um2);
     EXPECT_FALSE(actual.mbu_radius);
@@ -166,6 +181,7 @@ TEST(BendelStrategyTests, JsonConfig) {
     ASSERT_NO_THROW({ actual = strategy_json.get<GlobalOpts>(); });
 
     EXPECT_EQ(actual.sig_path_prefix, "top");
+    EXPECT_EQ(actual.top_port_path_prefix, "TOP");
     EXPECT_EQ(actual.top_module, "dff_worker");
     EXPECT_EQ(actual.top_instance, "worker");
     EXPECT_EQ(actual.netlist_path, "worker.json");

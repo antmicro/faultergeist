@@ -16,6 +16,7 @@
     "liberty_area_scale": "1um2",
     "fault_campaign_out": "@FAULT_CAMPAIGN_OUT@",
     "thread_number": 1,
-    "liberty_paths": [ @LIB_FILES@ ]
+    "liberty_paths": [ @LIB_FILES@ ],
+    "clk_names": ["clk"]
   }
 }

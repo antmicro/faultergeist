@@ -23,6 +23,7 @@
 
 struct GlobalOpts final {
     std::string sig_path_prefix;
+    std::string top_port_path_prefix;
     std::string top_module;
     std::string top_instance;
     std::string netlist_path;
@@ -35,6 +36,10 @@ struct GlobalOpts final {
     std::optional<std::string> vlt_config;
     std::string cell_area_json_path;
     std::optional<unit::DIST> mbu_radius;
+    bool collect_wires;
+    std::string wire_attribute;
+    bool deduplicate_wires;
+    std::vector<std::string> clk_names;
 
     static GlobalOpts parseCmdArgs(int argc, char** argv);
 };

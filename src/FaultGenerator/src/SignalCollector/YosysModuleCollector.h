@@ -18,19 +18,47 @@
 
 #include <nlohmann/json.hpp>
 
+#include <span>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+#include <vector>
+
 struct Cell;
 struct Module;
 class Liberty;
 
 class YosysModuleCollector {
     const Liberty& liberty;
+    bool collect_wires;
+    std::string wire_attribute;
+    bool deduplicate_wires;
+    std::span<const std::string> clk_names;
 
    public:
-    YosysModuleCollector(const Liberty& liberty) : liberty(liberty) {}
+    YosysModuleCollector(
+        const Liberty& liberty,
+        bool collect_wires,
+        std::string_view wire_attribute,
+        bool deduplicate_wires,
+        std::span<const std::string> clk_names
+    )
+        : liberty(liberty),
+          collect_wires(collect_wires),
+          wire_attribute(wire_attribute),
+          deduplicate_wires(deduplicate_wires),
+          clk_names(clk_names) {}
 
     std::vector<Module> collectFromFile(const std::filesystem::path&) const;
     std::vector<Module> collect(const nlohmann::json&) const;
 
    private:
-    void collectCell(Module&, Cell, const nlohmann::json&) const;
+    // Returns true if cell was collected.
+    bool collectCell(Module&, Cell, const nlohmann::json&) const;
+
+    void collectWires(
+        const nlohmann::json& module_value,
+        const std::unordered_set<std::string>& existing_cells,
+        Module& mod
+    ) const;
 };

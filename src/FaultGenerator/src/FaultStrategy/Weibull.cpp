@@ -77,6 +77,9 @@ std::vector<FaultEvent> WeibullStrategy::generate(
     auto eventTime = [&](const Signal& signal,
                          const WeibullConfig::Stream& stream,
                          FaultStrategy::RandomGen& gen) {
+        if (signal.type == SignalType::WIRE) {
+            return unit::TIME::max();
+        }
         const unit::ONE limiting_cross_section_factor =
             weibull_config.limiting_cross_section / weibull_config.reference_cell_area;
         const unit::LCS sigma0 =

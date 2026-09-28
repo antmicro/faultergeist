@@ -48,6 +48,29 @@ static void testStreams(std::istream& s1, std::istream& s2) {
 }
 
 [[maybe_unused]]
+static Signal createSignal(
+    std::string prefix_path,
+    std::string signal_name,
+    std::uint32_t width,
+    std::string hdlname = "",
+    unit::AREA cell_area = 1.0 * unit::AREA::unit,
+    SignalType signal_type = SignalType::REGISTER
+) {
+    return Signal(
+        {
+            .name = signal_name,
+            .type = signal_type == SignalType::REGISTER ? "$dff" : "wire",
+            .hdlname = std::move(hdlname),
+            .width = width,
+        },
+        std::move(prefix_path),
+        signal_type == SignalType::REGISTER ? cell_area : 0.0 * unit::AREA::unit,
+        std::nullopt,
+        signal_type
+    );
+}
+
+[[maybe_unused]]
 static std::vector<Signal> createSignals(
     size_t count,
     unit::AREA cell_area,
@@ -57,39 +80,51 @@ static std::vector<Signal> createSignals(
     signals.reserve(count);
     for (size_t i = 0; i < count; ++i) {
         std::string signal_name = "signal_" + std::to_string(i);
-        signals.push_back(Signal{
-            Cell{.name = signal_name, .type = "DFF", .hdlname = "", .width = cell_width},
+        signals.push_back(createSignal(
             /*prefix_path=*/"",
+            std::move(signal_name),
+            cell_width,
+            /*hdlname=*/"",
             cell_area,
-            std::nullopt,
             SignalType::REGISTER
-        });
+        ));
     }
     return signals;
 }
 
+// Creates an array of registers with 50/50 ratio.
 [[maybe_unused]]
-static Signal createSignal(
-    std::string prefix_path,
-    std::string signal_name,
-    std::uint32_t width,
-    std::string hdlname = ""
+static std::vector<Signal> createSignalsWithWires(
+    size_t count,
+    unit::AREA cell_area,
+    std::uint32_t cell_width = 1024
 ) {
-    constexpr unit::AREA DEFAULT_AREA =
-        1.0 * unit::AREA::unit;  // this is not important to this module
-
-    return Signal(
-        {
-            .name = signal_name,
-            .type = "$dff",
-            .hdlname = std::move(hdlname),
-            .width = width,
-        },
-        std::move(prefix_path),
-        DEFAULT_AREA,
-        std::nullopt,
-        SignalType::REGISTER
-    );
+    std::vector<Signal> signals;
+    signals.reserve(count);
+    size_t i = 0;
+    for (; i < count / 2; ++i) {
+        std::string signal_name = "signal_" + std::to_string(i);
+        signals.push_back(createSignal(
+            /*prefix_path=*/"",
+            std::move(signal_name),
+            cell_width,
+            /*hdlname=*/"",
+            cell_area,
+            SignalType::REGISTER
+        ));
+    }
+    for (; i < count; ++i) {
+        std::string signal_name = "wire_" + std::to_string(i);
+        signals.push_back(createSignal(
+            /*prefix_path=*/"",
+            std::move(signal_name),
+            cell_width,
+            /*hdlname=*/"",
+            cell_area,
+            SignalType::WIRE
+        ));
+    }
+    return signals;
 }
 
 [[maybe_unused]]

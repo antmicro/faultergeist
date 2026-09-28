@@ -20,10 +20,15 @@
 #include "IsFlipFlopPredicate.h"
 #include "LogUtils.h"
 #include "Module.h"
+#include "Utils.h"
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
+#include <cstdint>
 #include <fstream>
+#include <iterator>
+#include <unordered_set>
 
 namespace {
 
@@ -33,42 +38,49 @@ unsigned int getSignalWidth(std::string_view width_bits) {
     return std::bitset<SIGNAL_WIDTH_PARAMETER_LENGTH>(std::string(width_bits)).to_ulong();
 }
 
+bool isLibertyModule(const nlohmann::json& module) {
+    const auto attributes = module.find("attributes");
+    return attributes != module.end() && attributes->is_object() &&
+           attributes->contains("liberty_cell");
+}
+
 }  // namespace
 
-void YosysModuleCollector::collectCell(Module& mod, Cell cell, const nlohmann::json& json) const {
-    if (IsFlipFlop::check(cell, liberty)) {
-        VLOG(1) << "Cell '" << cell.name << "' is a flip-flop";
-        if (!json.contains("parameters")) {
-            LOG(WARNING) << "Cell '" << cell.name
-                         << "' has no property 'parameters', Skipping cell.";
-            return;
-        }
-
-        if (json.contains("attributes")) {
-            const auto& attrs = json["attributes"];
-            if (attrs.contains("hdlname")) {
-                cell.hdlname = attrs["hdlname"].get<std::string>();
-            }
-        }
-        if (cell.hdlname.empty()) {
-            VLOG(2) << "Cell '" << cell.name << "' has no 'hldname' attribute. Defaulting "
-                    << "to automatically extracted path.";
-        }
-
-        const auto& params = json["parameters"];
-        if (!params.contains("WIDTH")) {
-            VLOG(2) << "Cell '" << cell.name
-                    << "' has no property 'parameters.WIDTH', setting value to 1.";
-            cell.width = 1;
-        } else {
-            cell.width = getSignalWidth(params["WIDTH"].get<std::string_view>());
-        }
-
-        mod.cells.emplace_back(cell);
-        VLOG(3) << "Found signal " << mod.cells.back();
-    } else {
+bool YosysModuleCollector::collectCell(Module& mod, Cell cell, const nlohmann::json& json) const {
+    if (!IsFlipFlop::check(cell, liberty)) {
         VLOG(1) << "Cell '" << cell.name << "' is not a flip-flop. Skipping";
+        return false;
     }
+
+    VLOG(1) << "Cell '" << cell.name << "' is a flip-flop";
+    if (!json.contains("parameters")) {
+        LOG(WARNING) << "Cell '" << cell.name << "' has no property 'parameters', Skipping cell.";
+        return false;
+    }
+
+    if (json.contains("attributes")) {
+        const auto& attrs = json["attributes"];
+        if (attrs.contains("hdlname")) {
+            cell.hdlname = attrs["hdlname"].get<std::string>();
+        }
+    }
+    if (cell.hdlname.empty()) {
+        VLOG(2) << "Cell '" << cell.name << "' has no 'hdlname' attribute. Defaulting "
+                << "to automatically extracted path.";
+    }
+
+    const auto& params = json["parameters"];
+    if (!params.contains("WIDTH")) {
+        VLOG(2) << "Cell '" << cell.name
+                << "' has no property 'parameters.WIDTH', setting value to 1.";
+        cell.width = 1;
+    } else {
+        cell.width = getSignalWidth(params["WIDTH"].get<std::string_view>());
+    }
+
+    mod.cells.emplace_back(cell);
+    VLOG(3) << "Found signal " << mod.cells.back();
+    return true;
 }
 
 std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) const {
@@ -80,36 +92,104 @@ std::vector<Module> YosysModuleCollector::collect(const nlohmann::json& json) co
     const auto& modules_json = json["modules"];
     // Fill existing_modules
     for (const auto& [name, value] : modules_json.items()) {
-        if (value.contains("cells") && value["cells"].is_object()) {
+        if ((value.contains("cells") && value["cells"].is_object()) ||
+            (value.contains("netnames") && value["netnames"].is_object()) ||
+            (value.contains("ports") && value["ports"].is_object())) {
             existing_modules[name] = modules.size();
             modules.emplace_back(name);
         }
     }
 
     for (const auto& [module_key, module_value] : modules_json.items()) {
-        if (!module_value.contains("cells") || !module_value["cells"].is_object()) {
-            LOG(WARNING) << "Module '" << module_key << "' contains no cells. Skipping module.";
+        if (!existing_modules.contains(module_key)) {
+            LOG(WARNING) << "Module '" << module_key
+                         << "' contains no cells, nets or ports. Skipping module.";
+            continue;
+        }
+
+        if (isLibertyModule(module_value)) {
+            LOG(INFO) << "Module '" << module_key
+                      << "' marked as a liberty module. Skipping module.";
             continue;
         }
 
         Module& mod = modules[existing_modules.at(module_key)];
-        for (const auto& [cell_key, cell_value] : module_value["cells"].items()) {
-            Cell cell{
-                .name = cell_key,
-                .type = cell_value.value("type", ""),
-                .hdlname = "",
-                .width = 1,
-            };
-
-            if (auto it = existing_modules.find(cell.type); it != existing_modules.end()) {
-                VLOG(2) << "Cell's '" << cell.name << "' is child of module '" << it->first << "'";
-                mod.child_modules.emplace_back(cell_key, it->second);
+        if (module_value.contains("ports")) {
+            for (const auto& [port_name, _] : module_value["ports"].items()) {
+                mod.ports.insert(port_name);
             }
-            collectCell(mod, std::move(cell), cell_value);
+        }
+        std::unordered_set<std::string> existing_cells;
+        if (module_value.contains("cells")) {
+            for (const auto& [cell_key, cell_value] : module_value["cells"].items()) {
+                Cell cell{
+                    .name = cell_key,
+                    .type = cell_value.value("type", ""),
+                    .hdlname = "",
+                    .width = 1,
+                };
+
+                if (auto it = existing_modules.find(cell.type); it != existing_modules.end()) {
+                    VLOG(2) << "Cell's '" << cell.name << "' is child of module '" << it->first
+                            << "'";
+                    mod.child_modules.emplace_back(cell_key, it->second);
+                }
+                if (collectCell(mod, std::move(cell), cell_value)) {
+                    existing_cells.emplace(stripSignalNameFromCellType(cell_key));
+                }
+            }
+        }
+        if (collect_wires && module_value.contains("netnames")) {
+            collectWires(module_value, existing_cells, mod);
         }
     }
     SEE_CHECK(!modules.empty()) << "No modules found";
     return modules;
+}
+
+void YosysModuleCollector::collectWires(
+    const nlohmann::json& module_value,
+    const std::unordered_set<std::string>& existing_cells,
+    Module& mod
+) const {
+    for (const auto& [net_key, net_value] : module_value["netnames"].items()) {
+        if (std::ranges::find(clk_names, findSignalName(net_key)) != clk_names.end()) {
+            VLOG(2) << "Skipping clock wire '" << net_key << "'";
+            continue;
+        }
+        Wire wire{
+            .name = net_key,
+            .hdlname = "",
+            .width = static_cast<uint32_t>(net_value["bits"].size()),
+            .offset = net_value.value("offset", 0u),
+            .is_port = mod.ports.contains(wire.name)
+        };
+        if (net_value.contains("attributes")) {
+            const auto& attrs = net_value["attributes"];
+            if (attrs.contains("hdlname")) {
+                wire.hdlname = attrs["hdlname"].get<std::string>();
+            }
+        }
+
+        const bool has_required_attribute =
+            wire_attribute.empty() ||
+            (net_value.contains("attributes") && net_value["attributes"].contains(wire_attribute));
+        // Ports remain collectable without the requested attribute. For other wires,
+        // the attribute distinguishes source signals from synthesis-generated nets.
+        if (!has_required_attribute && !wire.is_port) {
+            VLOG(2) << "Skipping wire '" << wire.name << "' without attribute '" << wire_attribute
+                    << "'.";
+            continue;
+        }
+
+        auto non_register_bits =
+            deduplicate_wires ? wire.removeFlipFlopBits(existing_cells) : wire.removeFlipFlopBits();
+        mod.wires.insert(
+            mod.wires.end(),
+            std::make_move_iterator(non_register_bits.begin()),
+            std::make_move_iterator(non_register_bits.end())
+        );
+    }
 }
 
 std::vector<Module> YosysModuleCollector::collectFromFile(const std::filesystem::path& netlist

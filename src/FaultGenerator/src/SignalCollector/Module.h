@@ -17,10 +17,12 @@
 #pragma once
 
 #include "Cell.h"
+#include "Wire.h"
 
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 struct Module {
@@ -30,13 +32,24 @@ struct Module {
     std::vector<std::pair<std::string, unsigned int>> child_modules;
 
     std::vector<Cell> cells;
+    std::vector<Wire> wires{};
+    std::unordered_set<std::string> ports{};
 
     std::string dump() const {
         std::stringstream ss;
         ss << "Module: " << name << "\n";
         ss << "  Signals:\n";
+        ss << "    Ports:\n";
+        for (const std::string& port : ports) {
+            ss << "      " << port << "\n";
+        }
+        ss << "    Cells:\n";
         for (const auto& cell : cells) {
-            ss << "    " << cell << "\n";
+            ss << "      " << cell << "\n";
+        }
+        ss << "    Wires:\n";
+        for (const auto& wire : wires) {
+            ss << "      " << wire << "\n";
         }
         for (const auto& [instance_name, module_index] : child_modules) {
             ss << "  Child modules:\n";

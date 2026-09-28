@@ -115,7 +115,9 @@ void create_directory(std::string_view path) {
 
 void generate_campaigns(const GlobalOpts& opts, const std::vector<Signal>& signals) {
     std::string prefix_path = combineSignalPath(opts.sig_path_prefix, opts.top_instance);
-    FaultCampaignWriter::FaultFormatter formatter{FaultEventsSignalFormatter(prefix_path, signals)};
+    FaultCampaignWriter::FaultFormatter formatter{
+        FaultEventsSignalFormatter(prefix_path, signals, opts.top_port_path_prefix)
+    };
     MBUGenerator mbu_generator = MBUGenerator(signals, opts.mbu_radius);
     FaultCampaignWriter writer{formatter};
 
@@ -185,11 +187,18 @@ int main(int argc, char* argv[]) {
 
     // IMPORTANT: architecture of this system requires that signals vector is not
     // changed, to not invalidate stored iterators. It must remain `const`
-    const std::vector<Signal> signals =
-        SignalCollector(
-            opts.top_module, opts.top_instance, opts.sig_path_prefix, liberty, placement_info
-        )
-            .collectFromFile(opts.netlist_path);
+    const std::vector<Signal> signals = SignalCollector(
+                                            opts.top_module,
+                                            opts.top_instance,
+                                            opts.sig_path_prefix,
+                                            liberty,
+                                            placement_info,
+                                            opts.collect_wires,
+                                            opts.wire_attribute,
+                                            opts.deduplicate_wires,
+                                            opts.clk_names
+    )
+                                            .collectFromFile(opts.netlist_path);
 
     if (opts.vlt_config) {
         VltConfigWriter{

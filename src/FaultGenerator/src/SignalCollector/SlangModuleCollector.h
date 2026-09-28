@@ -18,6 +18,11 @@
 
 #include <filesystem>
 #include <memory>
+#include <span>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 struct Cell;
@@ -26,14 +31,44 @@ class Liberty;
 
 namespace slang::syntax {
 class SyntaxTree;
+struct ModuleDeclarationSyntax;
 }  // namespace slang::syntax
 
 class SlangModuleCollector {
     const Liberty& liberty;
+    bool collect_wires;
+    std::string wire_attribute;
+    bool deduplicate_wires;
+    std::span<const std::string> clk_names;
 
    public:
-    SlangModuleCollector(const Liberty& liberty) : liberty(liberty) {}
+    SlangModuleCollector(
+        const Liberty& liberty,
+        bool collect_wires,
+        std::string_view wire_attribute,
+        bool deduplicate_wires,
+        std::span<const std::string> clk_names
+    )
+        : liberty(liberty),
+          collect_wires(collect_wires),
+          wire_attribute(wire_attribute),
+          deduplicate_wires(deduplicate_wires),
+          clk_names(clk_names) {}
 
     std::vector<Module> collectFromFile(const std::filesystem::path&) const;
     std::vector<Module> collect(const std::shared_ptr<slang::syntax::SyntaxTree>& tree) const;
+
+   private:
+    std::unordered_set<std::string> collectCells(
+        const slang::syntax::ModuleDeclarationSyntax& declaration,
+        const slang::syntax::SyntaxTree& tree,
+        const std::unordered_map<std::string, unsigned int>& existing_modules,
+        Module& mod
+    ) const;
+
+    void collectWires(
+        const slang::syntax::ModuleDeclarationSyntax& declaration,
+        const std::unordered_set<std::string>& existing_cells,
+        Module& mod
+    ) const;
 };

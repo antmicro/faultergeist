@@ -61,7 +61,8 @@ TEST(VltConfigWriter, PrintsWireSignals) {
 
     EXPECT_THAT(printout, ::testing::ContainsRegex("forceable.*\\*.*request"));
     EXPECT_THAT(printout, ::testing::ContainsRegex("forceable.*\\*.*response"));
-    EXPECT_THAT(printout, ::testing::Not(::testing::HasSubstr("public_flat_rw")));
+    EXPECT_THAT(printout, ::testing::ContainsRegex("public_flat_rw.*\\*.*request"));
+    EXPECT_THAT(printout, ::testing::ContainsRegex("public_flat_rw.*\\*.*response"));
 }
 
 TEST(VltConfigWriter, DoesNotPrintUnknownSignals) {

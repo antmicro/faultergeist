@@ -14,14 +14,12 @@ fi_add_yosys_json(fi_e2e_worker_multiple_netlist
 )
 
 fi_add_fault_campaign(fi_e2e_worker_multiple_campaigns
-  NO_VLT_CONFIG
   CONFIG_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/config.json.in"
   OUTPUT "${CAMPAIGN_STAMP}"
   DEPENDS fi_e2e_worker_multiple_netlist
 )
 
 fi_add_multi_campaign_runs(fi_e2e_worker_multiple_campaign_runs
-  PUBLIC_FLAT_RW
   DEPENDS "${CAMPAIGN_STAMP}"
 )
 

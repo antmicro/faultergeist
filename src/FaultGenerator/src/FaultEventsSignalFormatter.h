@@ -29,14 +29,20 @@ class FaultEventsSignalFormatter {
         std::string path;
         std::string hdlname;
         std::size_t bit_idx;
+        bool grouped;
     };
 
     std::string_view prefix_path;
+    std::string top_port_path_prefix;
     std::vector<SignalData> real_signals_cache;
     std::span<const Signal> signals;
 
    public:
-    FaultEventsSignalFormatter(std::string_view prefix_path, std::span<const Signal>);
+    FaultEventsSignalFormatter(
+        std::string_view prefix_path,
+        std::span<const Signal>,
+        std::string_view top_port_path_prefix
+    );
     FaultEvent operator()(FaultEvent) const;
 
    private:
