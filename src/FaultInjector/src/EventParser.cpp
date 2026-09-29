@@ -136,6 +136,8 @@ std::optional<Event> EventParser::parse(std::string_view line) {
         type = Event::Type::SingleEventTransientUpset;
     } else if (type_str == "seu") {
         type = Event::Type::SingleEventUpset;
+    } else if (type_str == "sel") {
+        type = Event::Type::SingleEventLatchup;
     } else {
         return printFailedToParseLineError();
     }
@@ -155,9 +157,11 @@ std::optional<Event> EventParser::parse(std::string_view line) {
         );
         return std::nullopt;
     }
-    if (it->second.isStruct() && type == Event::Type::SingleEventTransientUpset) {
+    if (it->second.isStruct() && (type == Event::Type::SingleEventTransientUpset ||
+                                  type == Event::Type::SingleEventLatchup)) {
         FI_WARNING(
-            "Ignoring event: Unsupported SET on unpacked struct: %.*s. ",
+            "Ignoring event: Unsupported %s on unpacked struct: %.*s. ",
+            type == Event::Type::SingleEventTransientUpset ? "SET" : "SEL",
             (int)sig_path.size(),
             sig_path.data()
         );

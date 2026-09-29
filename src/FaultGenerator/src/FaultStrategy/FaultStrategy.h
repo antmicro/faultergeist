@@ -19,7 +19,6 @@
 #include "UnitUtils.h"
 
 #include <memory>
-#include <random>
 #include <span>
 #include <vector>
 
@@ -36,6 +35,8 @@ class FaultStrategy {
         std::uint32_t thread_number;
         bool all_generate_forceable = false;
         bool all_generate_public_flat_rw = false;
+        unit::PERCENT latchup_probability;
+        unit::PERCENT transient_probability;
 
         bool tooManyEventsGenerated(std::size_t generated) const {
             return num_of_events > 0 && generated >= num_of_events;
@@ -49,11 +50,6 @@ class FaultStrategy {
             return os << " }";
         }
     };
-    struct RandomGen final {
-        explicit RandomGen(std::uint32_t seed) : random_generator(seed) {}
-        std::mt19937 random_generator;
-    };
-
     const Config config;
 
     virtual std::vector<FaultEvent> generate(

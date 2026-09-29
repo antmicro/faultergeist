@@ -38,7 +38,7 @@ concept EventTimeGenerator = requires(
     const Generator& generator,
     const Signal& signal,
     const Stream& stream,
-    FaultStrategy::RandomGen& random
+    RandomGen& random
 ) {
     { generator(signal, stream, random) } -> std::convertible_to<unit::TIME>;
 };
@@ -109,7 +109,7 @@ class FaultStrategyRunner {
     }
 
     std::vector<FaultEvent> generateInParallelByTimeSlice() const {
-        FaultStrategy::RandomGen gen = FaultStrategy::RandomGen(config.seed);
+        RandomGen gen = RandomGen(config.seed);
         if (config.thread_number == 1) {
             // if there is only one thread allowed, don't spawn another one
             const auto [begin, end] = scheduleWorkTime(0);
@@ -118,7 +118,7 @@ class FaultStrategyRunner {
 
         std::vector<std::vector<FaultEvent>> partial_results{config.thread_number};
 
-        std::vector<FaultStrategy::RandomGen> worker_generators;
+        std::vector<RandomGen> worker_generators;
         worker_generators.reserve(config.thread_number);
         for (std::size_t i = 0; i < config.thread_number; ++i) {
             worker_generators.emplace_back(gen.random_generator());
@@ -152,7 +152,7 @@ class FaultStrategyRunner {
     }
 
     std::vector<FaultEvent> generateSingleTimeSlice(
-        FaultStrategy::RandomGen& worker_gen,
+        RandomGen& worker_gen,
         unit::TIME begin_time,
         unit::SIM_TIME end_time
     ) const {
@@ -205,7 +205,10 @@ class FaultStrategyRunner {
                     worker_gen.random_generator,
                     std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width}
                 ),
-                faultEventType(signal.type)
+                faultEventType(
+                    signal.type,
+                    {config.latchup_probability, config.transient_probability, worker_gen}
+                )
             );
             if (auto secondary = mbu_generator.generateSecondaryFault(worker_gen, signal)) {
                 result.emplace_back(
@@ -218,7 +221,10 @@ class FaultStrategyRunner {
                             0, secondary->cell.width
                         }
                     ),
-                    faultEventType(signal.type)
+                    faultEventType(
+                        signal.type,
+                        {config.latchup_probability, config.transient_probability, worker_gen}
+                    )
                 );
             }
 

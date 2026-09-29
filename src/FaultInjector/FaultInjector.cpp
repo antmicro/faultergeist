@@ -116,6 +116,9 @@ class FaultInjector {
             case Event::Type::SingleEventUpset:
                 simulateSingleEventUpset(event);
                 break;
+            case Event::Type::SingleEventLatchup:
+                simulateSingleEventLatchup(event);
+                break;
         }
     }
 
@@ -229,13 +232,21 @@ class FaultInjector {
 
     void simulateSingleEventUpset(const Event& event) {
         FI_TRACE("Simulating single-event upset");
+        vpiToggle(event, vpiNoDelay);
+    }
 
+    void simulateSingleEventLatchup(const Event& event) {
+        FI_TRACE("Simulating single-event latchup");
+        vpiToggle(event, vpiForceFlag);
+    }
+
+    static void vpiToggle(const Event& event, PLI_INT32 putFlag) {
         s_vpi_value vpi_value{};
         vpi_value.format = vpiVectorVal;
         vpi_get_value(event.signal->handle(), &vpi_value);
 
         FI_TRACE(
-            "SEU: before flipping %d bit of %.*s: %s",
+            "\tbefore flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
@@ -243,13 +254,13 @@ class FaultInjector {
         );
         vpiVectorToggleBit(vpi_value, event.bit_idx);
         FI_TRACE(
-            "SEU: after flipping %d bit of %.*s: %s",
+            "\tafter flipping %d bit of %.*s: %s",
             event.bit_idx,
             (int)event.sig_path().size(),
             event.sig_path().data(),
             vpiVectorToString(vpi_value, event.signal->vpi_width).data()
         );
-        vpi_put_value(event.signal->handle(), &vpi_value, nullptr, vpiNoDelay);
+        vpi_put_value(event.signal->handle(), &vpi_value, nullptr, putFlag);
     }
 
     static constexpr int VPI_VECTOR_WORD_SIZE =

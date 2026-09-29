@@ -16,22 +16,10 @@
 
 #pragma once
 
-#include "PlacementMap.h"
-#include "RandomGen.h"
-#include "UnitUtils.h"
+#include <cstdint>
+#include <random>
 
-#include <optional>
-
-struct Signal;
-
-class MBUGenerator {
-   public:
-    const std::optional<unit::DIST> mbu_sigma;
-    const PlacementMap placement_map;
-
-   public:
-    MBUGenerator() = default;
-    MBUGenerator(std::span<const Signal>, std::optional<unit::DIST> mbu_radius);
-
-    const Signal* generateSecondaryFault(RandomGen&, const Signal& primarySignal) const;
+struct RandomGen final {
+    explicit RandomGen(std::uint32_t seed) : random_generator(seed) {}
+    std::mt19937 random_generator;
 };

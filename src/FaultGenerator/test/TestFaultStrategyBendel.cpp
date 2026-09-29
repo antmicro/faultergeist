@@ -89,6 +89,8 @@ TEST(BendelGenerationTest, CountsWithinTolerance) {
         .seed = 42,
         .simulation_time = 9999999 * unit::s,
         .thread_number = 1,
+        .latchup_probability = 50 * unit::PERCENT::unit,
+        .transient_probability = 50 * unit::PERCENT::unit
     };
 
     std::vector<FaultEvent> all_events;
@@ -121,6 +123,8 @@ TEST(BendelGenerationTest, WhenInParallelResultIsSorted) {
         .seed = 42,
         .simulation_time = 9999999 * unit::s,
         .thread_number = 4u,
+        .latchup_probability = 50 * unit::PERCENT::unit,
+        .transient_probability = 50 * unit::PERCENT::unit
     };
 
     BendelConfig bendel_config = {.streams = streams};

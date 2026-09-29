@@ -32,6 +32,7 @@ namespace unit {
 using mp_units::quantity;
 
 using mp_units::one;
+using mp_units::percent;
 
 using mp_units::si::unit_symbols::mg;
 using mp_units::si::unit_symbols::rad;
@@ -65,6 +66,7 @@ using TIME = quantity<ps>;
 using DIST = quantity<um>;
 using AREA = quantity<um2>;
 using ENERGY = quantity<MeV>;
+using PERCENT = quantity<percent>;
 
 // NOTE: femtoseconds are hard coded into the injector.
 // The unit below should not be changed without adjusting injector

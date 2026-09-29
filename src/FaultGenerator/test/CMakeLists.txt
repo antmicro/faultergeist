@@ -53,6 +53,13 @@ add_test(NAME unit.generation.faultStrategy.bendel COMMAND TestFaultStrategyBend
 #==============================================================================
 #==============================================================================
 #==============================================================================
+add_executable(TestSingleEventLatchup TestSingleEventLatchup.cpp)
+target_link_libraries(TestSingleEventLatchup PRIVATE FaultGeneratorTestMain)
+add_test(NAME unit.generation.singleEventLatchup COMMAND TestSingleEventLatchup)
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
 add_executable(TestLibertyParsing TestLibertyParsing.cpp)
 target_link_libraries(TestLibertyParsing PRIVATE FaultGeneratorTestMain)
 target_compile_definitions(TestLibertyParsing PRIVATE

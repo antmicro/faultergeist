@@ -17,6 +17,7 @@
 #pragma once
 
 #include "FaultStrategy.h"
+#include "RandomGen.h"
 #include "UnitUtils.h"
 
 struct BendelConfig {
@@ -59,5 +60,5 @@ class BendelStrategy final : public FaultStrategy {
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:
-    unit::TIME eventTime(const Signal&, const BendelConfig::Stream&, FaultStrategy::RandomGen&);
+    unit::TIME eventTime(const Signal&, const BendelConfig::Stream&, RandomGen&);
 };

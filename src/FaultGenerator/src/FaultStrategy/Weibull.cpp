@@ -44,7 +44,7 @@ WeibullStrategy::WeibullStrategy(const Config& config, const WeibullConfig& weib
 unit::TIME WeibullStrategy::eventTime(
     const WeibullConfig::Stream& stream,
     unit::LCS sigma0,
-    FaultStrategy::RandomGen& gen
+    RandomGen& gen
 ) {
     thread_local std::exponential_distribution<double> dist;
 
@@ -74,9 +74,8 @@ std::vector<FaultEvent> WeibullStrategy::generate(
 ) {
     VLOG(1) << "Weibull strategy generating in parallel";
 
-    auto eventTime = [&](const Signal& signal,
-                         const WeibullConfig::Stream& stream,
-                         FaultStrategy::RandomGen& gen) {
+    auto eventTime = [&](const Signal& signal, const WeibullConfig::Stream& stream, RandomGen& gen
+                     ) {
         if (signal.type == SignalType::WIRE) {
             return unit::TIME::max();
         }

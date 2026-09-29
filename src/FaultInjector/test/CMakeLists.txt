@@ -60,6 +60,25 @@ add_test(
 )
 
 
+set(FAULT_CAMPAIGN_OUT "${CMAKE_CURRENT_LIST_DIR}/fault_injector_sel_test.csv.in")
+set(SIMULATION_DIR "${WORK_DIR}/sel_test")
+fi_add_verilated_sim(fi_integration_injection_sel_sim
+  TRACE
+  NO_MAIN FAULT_INJECTION
+  SOURCES ${SOURCES}
+)
+fi_add_sim_run(fi_integration_injection_sel_run
+  DEPENDS fi_integration_injection_sel_sim
+  EXPECT_MISMATCH
+  EXPECT_VCD_GOLDENFILE "${CMAKE_CURRENT_LIST_DIR}/sel_dump.vcd.out"
+  WORK_DIR "${SIMULATION_DIR}"
+)
+add_test(
+  NAME integration.injection.vcdFaultGoldenfile.sel
+  COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target fi_integration_injection_sel_run --config $<CONFIG>
+)
+
+
 set(SIMULATION_DIR "${WORK_DIR}/missing_campaign_file")
 fi_add_verilated_sim(fi_integration_missing_campaign_file_sim
   FAULT_INJECTION CAMPAIGN_FILE "non_existent.csv"

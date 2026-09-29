@@ -23,7 +23,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <string>
 #include <vector>
 
 namespace {
@@ -48,6 +47,8 @@ TEST(WeibullGenerationTest, CountsWithinTolerance) {
         .seed = 42,
         .simulation_time = 9999999 * unit::s,
         .thread_number = 1,
+        .latchup_probability = 50 * unit::PERCENT::unit,
+        .transient_probability = 50 * unit::PERCENT::unit
     };
 
     std::vector<WeibullConfig::Stream> streams = {
@@ -198,6 +199,8 @@ TEST(WeibullGenerationTest, WhenInParallelResultIsSorted) {
         .seed = 42,
         .simulation_time = 9999999 * unit::s,
         .thread_number = 4u,
+        .latchup_probability = 50 * unit::PERCENT::unit,
+        .transient_probability = 50 * unit::PERCENT::unit
     };
 
     WeibullConfig weibull_config =

@@ -32,6 +32,7 @@ struct Event {
     enum class Type : std::uint8_t {
         SingleEventTransientUpset,
         SingleEventUpset,
+        SingleEventLatchup,
     };
 
     const Signal* signal = nullptr;

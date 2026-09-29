@@ -50,13 +50,16 @@ std::vector<FaultEvent> ExhaustiveStrategy::generate(
     std::span<const Signal> signals
 ) {
     std::vector<FaultEvent> fault_events;
+    RandomGen gen(config.seed);
 
     switch (exhaustive_config.fault_type) {
         case FaultEventType::AUTO:
             fault_events.reserve(signals.size() * 2);
             for (std::size_t i = 0; i < signals.size(); ++i) {
                 const auto& signal = signals[i];
-                const auto type = faultEventType(signal.type);
+                const auto type = faultEventType(
+                    signal.type, {config.latchup_probability, config.transient_probability, gen}
+                );
                 for (std::uint32_t bit = 0; bit < signal.cell.width; ++bit) {
                     fault_events.emplace_back(FaultEvent{
                         signals.begin() + i,
@@ -69,7 +72,9 @@ std::vector<FaultEvent> ExhaustiveStrategy::generate(
             }
             for (std::size_t i = 0; i < signals.size(); ++i) {
                 const auto& signal = signals[i];
-                if (faultEventType(signal.type) != FaultEventType::SINGLE_EVENT_UPSET) {
+                if (faultEventType(
+                        signal.type, {config.latchup_probability, config.transient_probability, gen}
+                    ) != FaultEventType::SINGLE_EVENT_UPSET) {
                     continue;
                 }
                 for (std::uint32_t bit = 0; bit < signal.cell.width; ++bit) {

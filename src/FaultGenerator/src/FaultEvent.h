@@ -16,22 +16,35 @@
 
 #pragma once
 
+#include "RandomGen.h"
 #include "Signal.h"
 #include "UnitUtils.h"
 
 #include <cstdint>
 #include <ostream>
+#include <random>
+
+struct FaultEventConfig {
+    unit::PERCENT latchup_probability;
+    unit::PERCENT transient_probability;
+    RandomGen& gen;
+};
 
 enum class FaultEventType : std::uint8_t {
     UNKNOWN = 0,
     SINGLE_EVENT_TRANSIENT,
     SINGLE_EVENT_UPSET,
+    SINGLE_EVENT_LATCHUP,
     AUTO,
 };
 
-inline FaultEventType faultEventType(SignalType signal_type) {
-    return signal_type == SignalType::REGISTER ? FaultEventType::SINGLE_EVENT_UPSET
-                                               : FaultEventType::SINGLE_EVENT_TRANSIENT;
+inline FaultEventType faultEventType(SignalType signal_type, const FaultEventConfig& config) {
+    if (signal_type == SignalType::REGISTER) {
+        return FaultEventType::SINGLE_EVENT_UPSET;
+    }
+    std::bernoulli_distribution dist(config.latchup_probability.numerical_value_in(unit::one));
+    return dist(config.gen.random_generator) ? FaultEventType::SINGLE_EVENT_LATCHUP
+                                             : FaultEventType::SINGLE_EVENT_TRANSIENT;
 }
 
 inline std::ostream& operator<<(std::ostream& os, FaultEventType type) {
@@ -40,6 +53,8 @@ inline std::ostream& operator<<(std::ostream& os, FaultEventType type) {
             return os << "set";
         case FaultEventType::SINGLE_EVENT_UPSET:
             return os << "seu";
+        case FaultEventType::SINGLE_EVENT_LATCHUP:
+            return os << "sel";
         default:
             break;
     }

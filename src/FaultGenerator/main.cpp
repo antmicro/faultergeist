@@ -62,7 +62,7 @@ std::vector<TaskInput> generate_tasks(
             .num_of_events = strategy->config.num_of_events,
             .seed = dist(seed_generator),
             .simulation_time = strategy->config.simulation_time,
-            .thread_number = 1
+            .thread_number = 1,
             // TODO: since we don't want to have more threads than user
             // allowed, when we generate many campaigns in parallel, individual
             // generation will be performed each on single thread
@@ -70,6 +70,8 @@ std::vector<TaskInput> generate_tasks(
             // particular campaign to run on one thread, because other campaigns take other cores.
             // We could do it smarter, for example we could have a central
             // scheduler that schedules the jobs. For now this is unnecessary.
+            .latchup_probability = strategy->config.latchup_probability,
+            .transient_probability = strategy->config.transient_probability,
         };
         std::stringstream campaign_output_filename;
         campaign_output_filename << root_path << "/fault_campaign_" << new_config.seed << ".csv";

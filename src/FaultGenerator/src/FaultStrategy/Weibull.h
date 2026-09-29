@@ -17,6 +17,7 @@
 #pragma once
 
 #include "FaultStrategy.h"
+#include "RandomGen.h"
 #include "UnitUtils.h"
 
 #include <span>
@@ -62,5 +63,5 @@ class WeibullStrategy final : public FaultStrategy {
     std::shared_ptr<FaultStrategy> copy_with(FaultStrategy::Config) override;
 
    private:
-    unit::TIME eventTime(const WeibullConfig::Stream&, unit::LCS sigma0, FaultStrategy::RandomGen&);
+    unit::TIME eventTime(const WeibullConfig::Stream&, unit::LCS sigma0, RandomGen&);
 };

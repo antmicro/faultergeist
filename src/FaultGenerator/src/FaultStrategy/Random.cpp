@@ -30,7 +30,7 @@ std::vector<FaultEvent> RandomStrategy::generate(
     const MBUGenerator& mbu_generator,
     std::span<const Signal> signals
 ) {
-    FaultStrategy::RandomGen gen = FaultStrategy::RandomGen(config.seed);
+    RandomGen gen = RandomGen(config.seed);
     std::vector<unit::SIM_TIME> time_values;
     time_values.reserve(config.num_of_events);
     std::uniform_int_distribution<unit::SIM_TIME::rep> time_dist{
@@ -61,7 +61,9 @@ std::vector<FaultEvent> RandomStrategy::generate(
                 gen.random_generator,
                 std::uniform_int_distribution<std::uint32_t>::param_type{0, signal.cell.width - 1}
             ),
-            faultEventType(signal.type)
+            faultEventType(
+                signal.type, {config.latchup_probability, config.transient_probability, gen}
+            )
         });
         if (auto secondary = mbu_generator.generateSecondaryFault(gen, signal)) {
             fault_events.emplace_back(
@@ -74,7 +76,9 @@ std::vector<FaultEvent> RandomStrategy::generate(
                         0, secondary->cell.width
                     }
                 ),
-                faultEventType(signal.type)
+                faultEventType(
+                    signal.type, {config.latchup_probability, config.transient_probability, gen}
+                )
             );
         }
     }

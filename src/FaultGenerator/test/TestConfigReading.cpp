@@ -58,7 +58,8 @@ TEST(RandomStrategyTests, JsonConfig) {
     "liberty_area_scale": "26cm2",
     "mbu_radius": "2.5mm",
     "campaign_number": 26,
-    "thread_number": 15
+    "thread_number": 15,
+    "latchup_probability": 30
   }
 })json"_json;
 
@@ -87,6 +88,8 @@ TEST(RandomStrategyTests, JsonConfig) {
     EXPECT_EQ(random->config.simulation_time, 102 * unit::ms);
     EXPECT_EQ(random->config.seed, 13);
     EXPECT_EQ(random->config.thread_number, 15u);
+    EXPECT_QUANTITY_DOUBLE_EQ(random->config.latchup_probability, 30 * unit::PERCENT::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(random->config.transient_probability, 70 * unit::PERCENT::unit);
 }
 
 TEST(WeibullStrategyTests, JsonConfig) {
@@ -138,6 +141,8 @@ TEST(WeibullStrategyTests, JsonConfig) {
     EXPECT_EQ(strategy->config.seed, 56);
     EXPECT_EQ(strategy->config.simulation_time, 104 * unit::ps);
     EXPECT_EQ(strategy->config.thread_number, 1);
+    EXPECT_QUANTITY_DOUBLE_EQ(strategy->config.latchup_probability, 0 * unit::PERCENT::unit);
+    EXPECT_QUANTITY_DOUBLE_EQ(strategy->config.transient_probability, 100 * unit::PERCENT::unit);
 
     auto wconfig = strategy->weibull_config;
     ASSERT_EQ(wconfig.streams.size(), 1);

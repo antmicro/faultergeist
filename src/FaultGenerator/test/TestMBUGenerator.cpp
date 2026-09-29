@@ -115,8 +115,8 @@ TEST(PlacementMapTest, MatchesLinearReferenceAcrossShapesAndOverlaps) {
 
 TEST(MBUGeneratorTest, DisabledDoesNotConsumeRandomState) {
     MBUGenerator generator;
-    FaultStrategy::RandomGen actual{42};
-    FaultStrategy::RandomGen expected{42};
+    RandomGen actual{42};
+    RandomGen expected{42};
     Signal primary = signal("primary", std::nullopt);
 
     EXPECT_EQ(generator.generateSecondaryFault(actual, primary), nullptr);
@@ -126,8 +126,8 @@ TEST(MBUGeneratorTest, DisabledDoesNotConsumeRandomState) {
 TEST(MBUGeneratorTest, UnplacedPrimaryDoesNotConsumeRandomState) {
     std::vector<Signal> signals{signal("unplaced", std::nullopt)};
     MBUGenerator generator{signals, 1 * unit::um};
-    FaultStrategy::RandomGen actual{42};
-    FaultStrategy::RandomGen expected{42};
+    RandomGen actual{42};
+    RandomGen expected{42};
 
     EXPECT_EQ(generator.generateSecondaryFault(actual, signals[0]), nullptr);
     EXPECT_EQ(actual.random_generator(), expected.random_generator());
@@ -158,7 +158,7 @@ TEST(MBUGeneratorTest, Approximately95PercentOfHitsAreInsideRadius) {
         }
 
         const MBUGenerator generator{signals, radius};
-        FaultStrategy::RandomGen random{42};
+        RandomGen random{42};
 
         int hits = 0;
         int inside = 0;
@@ -191,6 +191,8 @@ TEST(MBUGeneratorTest, SecondaryBitsUseTheirOwnCellWidth) {
         .seed = 42,
         .simulation_time = 100 * unit::ns,
         .thread_number = 2,
+        .latchup_probability = 50 * unit::PERCENT::unit,
+        .transient_probability = 50 * unit::PERCENT::unit
     };
     for (const auto secondary_width : {1u, 31u}) {
         std::vector<Signal> signals{
@@ -220,7 +222,7 @@ TEST(MBUGeneratorTest, SecondaryBitsUseTheirOwnCellWidth) {
         RandomStrategy random{config};
         check(random.generate(generator, signals));
         const std::vector<int> streams{0};
-        const auto next_time = [](const Signal&, int, FaultStrategy::RandomGen&) -> unit::TIME {
+        const auto next_time = [](const Signal&, int, RandomGen&) -> unit::TIME {
             return 1 * unit::ns;
         };
         const auto max_time = [&](int) { return config.simulation_time; };

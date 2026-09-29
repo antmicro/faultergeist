@@ -61,6 +61,15 @@ TEST(EventParsing, ParsesValidSeuEvent) {
     EXPECT_EQ(result->type, fin::Event::Type::SingleEventUpset);
 }
 
+TEST(EventParsing, ParsesValidSelEvent) {
+    auto result = parser.parse_line("75,TOP.another_sig,2,sel");
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->time, 75);
+    EXPECT_EQ(result->sig_path(), "TOP.another_sig");
+    EXPECT_EQ(result->bit_idx, 2);
+    EXPECT_EQ(result->type, fin::Event::Type::SingleEventLatchup);
+}
+
 TEST(EventParsing, NonExistantSignalGivesNullopt) {
     auto result = parser.parse_line("100,TOP.null_sig,0,seu");
     EXPECT_FALSE(result.has_value());

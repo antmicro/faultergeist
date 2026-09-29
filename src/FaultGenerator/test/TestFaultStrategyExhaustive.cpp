@@ -113,12 +113,12 @@ class FaultGeneratorTests : public testing::TestWithParam<NetlistBackend> {
                                  .collectFromModules(modules);
 
         ExhaustiveStrategy strategy(
-            {
-                .num_of_events = 0,
-                .seed = 42,
-                .simulation_time = simulation_time,
-                .thread_number = 1,
-            },
+            {.num_of_events = 0,
+             .seed = 42,
+             .simulation_time = simulation_time,
+             .thread_number = 1,
+             .latchup_probability = 0 * unit::PERCENT::unit,
+             .transient_probability = 100 * unit::PERCENT::unit},
             {.fault_type = FaultEventType::AUTO}
         );
         const auto events = strategy.generate(MBUGenerator{}, signals);

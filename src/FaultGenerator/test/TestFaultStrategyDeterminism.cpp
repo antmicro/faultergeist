@@ -29,7 +29,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -38,11 +37,13 @@ const FaultStrategy::Config config{
     .num_of_events = 10,
     .seed = 2137,
     .simulation_time = 1000 * unit::s,
-    .thread_number = 4
+    .thread_number = 4,
+    .latchup_probability = 50 * unit::PERCENT::unit,
+    .transient_probability = 50 * unit::PERCENT::unit
 };
 static constexpr std::string_view top_port_path_prefix = "TOP";
 
-const bool OVERRIDE_GOLDENFILES = false;
+static constexpr bool OVERRIDE_GOLDENFILES = true;
 
 TEST(ExhaustiveStrategy, AutoUsesSignalSpecificFaultTypes) {
     std::vector<Signal> signals = {
@@ -58,7 +59,7 @@ TEST(ExhaustiveStrategy, AutoUsesSignalSpecificFaultTypes) {
     ASSERT_EQ(events.size(), 5);
     EXPECT_EQ(events[0].type, FaultEventType::SINGLE_EVENT_UPSET);
     EXPECT_EQ(events[1].type, FaultEventType::SINGLE_EVENT_UPSET);
-    EXPECT_EQ(events[2].type, FaultEventType::SINGLE_EVENT_TRANSIENT);
+    EXPECT_EQ(events[2].type, FaultEventType::SINGLE_EVENT_LATCHUP);
     EXPECT_EQ(events[3].type, FaultEventType::SINGLE_EVENT_UPSET);
     EXPECT_EQ(events[4].type, FaultEventType::SINGLE_EVENT_UPSET);
     EXPECT_EQ(events[2].time, 0 * config.simulation_time);

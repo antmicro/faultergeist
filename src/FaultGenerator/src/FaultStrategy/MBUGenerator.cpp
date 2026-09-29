@@ -16,7 +16,6 @@
 
 #include "MBUGenerator.h"
 
-#include "FaultStrategy.h"
 #include "LogUtils.h"
 #include "PlacementMap.h"
 #include "Signal.h"
@@ -53,10 +52,8 @@ MBUGenerator::MBUGenerator(std::span<const Signal> signals, std::optional<unit::
     : mbu_sigma(radiusToSigma(mbu_radius)),
       placement_map(mbu_sigma ? PlacementMap(signals) : PlacementMap{}) {}
 
-const Signal* MBUGenerator::generateSecondaryFault(
-    FaultStrategy::RandomGen& gen,
-    const Signal& primarySignal
-) const {
+const Signal* MBUGenerator::generateSecondaryFault(RandomGen& gen, const Signal& primarySignal)
+    const {
     if (!mbu_sigma || !primarySignal.cell_placement) {
         return nullptr;
     }

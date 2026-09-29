@@ -60,7 +60,8 @@ faultergeist-gen \
   --top_module="instance" \
   --top_instance="instance_name" \
   --netlist_path="netlist.json" \
-  --fault_campaign_out="fault_campaign_out.csv"
+  --fault_campaign_out="fault_campaign_out.csv" \
+  --liberty_paths="worker/worker.lib"
 ```
 
 3. Initialize FI module in test bench code.
